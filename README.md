@@ -1,4 +1,48 @@
+---
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
 # data-mining-final
+Author: Noah Love, Blinda Tian
+
+### Project summary
+- A at most 5 sentence summary of the project
+- An general explanation of the different files/folders if someone were to replicate your study.
+
+
+## Introduction
+- intent and finding 
+- have at least one paragraph that discusses the potential for data-snooping for your project.
+
+
+## Dataset
+
+
+## Validation
+
+
+## Conclusion
+- intent and finding 
+
+
+
+
+## Final checklist (for reference)
+To complete this portion, I recommend you talk to each other before the full project is finished.
+
+What was the initial motivation for tackling the project?
+What datasets were used?
+What aspect of the project is considered a data-mining and what is discovered?
+Is there anything you would have done differently? For example
+Used different datasets
+Used different models to explore the data
+Generated a different feature
+Arrived at a different conclusion from the given data. (These are simply suggestions, you team only has to come up with one thing
+
+
+
 
 ## Datasets
 The data sets are difficult to keep track of by themselves. They have to each be downloaded separately. As a result, each is listed here for reference:
