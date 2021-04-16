@@ -1,8 +1,8 @@
 ---
 output:
-  pdf_document: default
-  word_document: default
   html_document: default
+  word_document: default
+  pdf_document: default
 ---
 # data-mining-final
 Author: Noah Love, Blinda Tian
@@ -17,8 +17,63 @@ Author: Noah Love, Blinda Tian
 - have at least one paragraph that discusses the potential for data-snooping for your project.
 
 
-## Dataset
+The low-interest rate has been the world Central Bank's monetary policy since the Covid pandemic hit when they intended to stimulate the overall economy. With economic activity gaining momentum in recent months and the approval of a third U.S. stimulus package in March, the current U.S economy is stronger than expected and  higher inflation and thus wall street has spread out concerns over an interest rate hike soon in the future. Thus, our project is focused on the 10 year treasury yield and its relation to other economic indicators and financial variables. 
 
+The algorithm will helps to discover the pattern over characteristics of 10 year risk-free rate in economic cycle stages. The pattern can be used in (....)
+
+The output can provide information for individual investors or financial institutions to understand about financial market and shed some light on interest rate prediction. 
+
+
+
+(predict interest rate change? or inferences? work on time series)
+(or we can use infer whether the US economy has gone through a short or long economic cycle using clustering/k-means) 
+
+
+The mechanism of monetary policy (data classification): 
+
+1. Asset price: 
+- intent and finding 
+- house_price_index_nationwide
+- s_and_p
+- total_vehicle_sales
+
+
+2. Debt supply and demand: 
+- federal_debt_percent_of_gdp
+- federal_surplus_or_deficit
+
+3. economic expectation/confidence:
+- consumer_price_index_nationwide
+- consumer_price_index_urban
+- personal_savings_rate
+- personal_consumption_expenditures
+- gdp
+- real_gdp
+- real_gdp_per_capita
+- all_employees_minus_farm
+- unemployment_rate
+- industrial_production_index
+- labor_force_participation_rate
+- inflation_expectation
+
+4. secondary market 
+- ten_minus_three_months_treasury
+- ten_year_treasury
+- aaa_corporate_bond_yield
+- ten_minus_two_treasury
+- thirty_year_fixed_mortgage
+
+5. Federal Reserve (Fed decided)
+- m_one
+- m_two
+- m_three
+- velocity_of_mtwo
+- eff_fed_funds_rate
+
+
+
+## Dataset
+- APIs and  web scraping
 
 ## Validation
 
