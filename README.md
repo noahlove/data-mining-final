@@ -11,11 +11,12 @@ Author: Noah Love, Blinda Tian
 - A at most 5 sentence summary of the project
 - An general explanation of the different files/folders if someone were to replicate your study.
 
+(predict interest rate change? or inferences? work on time series)
+(or we can use infer whether the US economy has gone through a short or long economic cycle using clustering/k-means) 
 
 ## Introduction
 - intent and finding 
 - have at least one paragraph that discusses the potential for data-snooping for your project.
-
 
 The low-interest rate has been the world Central Bank's monetary policy since the Covid pandemic hit when they intended to stimulate the overall economy. With economic activity gaining momentum in recent months and the approval of a third U.S. stimulus package in March, the current U.S economy is stronger than expected and  higher inflation and thus wall street has spread out concerns over an interest rate hike soon in the future. Thus, our project is focused on the 10 year treasury yield and its relation to other economic indicators and financial variables. 
 
@@ -25,8 +26,7 @@ The output can provide information for individual investors or financial institu
 
 
 
-(predict interest rate change? or inferences? work on time series)
-(or we can use infer whether the US economy has gone through a short or long economic cycle using clustering/k-means) 
+
 
 
 The mechanism of monetary policy (data classification): 

@@ -4,34 +4,62 @@
 
 
 ## Wrangle the data:
+
 ```{r Packages, message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse)
 library(data.table)
- 
+library(dplyr)
 ```
 
 
 
+Question from Blinda: too many data source, some are quite similar. 
 ```{r message=FALSE, warning=FALSE}
 
-
+list.files(pattern = "*.csv", 
+               full.names = T)   
 
 
 tbl <-
     list.files(pattern = "*.csv", 
                full.names = T) %>% 
     map_df(~read_csv(., col_types = cols(.default = "c"))) 
-
 files = list.files(pattern="*.csv")
-
 tbl = lapply(files, read_csv) %>% bind_rows()
-
 View(tbl)
+tbl_sorted <- tbl %>% group_by(DATE)
+```
 
-tbl_sorted <- tbl %>% 
-  group_by(DATE)
+
+# Blinda code is here 
+
+look at interest rate
+select time range
+
+```{r}
+df_test <-tbl_sorted
+df_test <- na.omit(df_test) # remove any missing value that might be present 
 
 
+df <- scale(df)
+
+
+# 10 year interest rate over time
+tbl_sorted %>%
+  group_by(symbol) %>%
+  plot_time_series(date, adjusted, .facet_ncol = 2, .interactive = FALSE)
+
+# determine time range
+
+
+
+
+# stages of the economic cycle
+```
+
+
+# Data Summarization
+```{r}
 
 ```
 
