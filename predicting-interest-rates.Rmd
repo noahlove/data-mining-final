@@ -9,11 +9,15 @@
 library(tidyverse)
 library(data.table)
 library(dplyr)
+library(quantmod)
+library(zoo)
+library(PerformanceAnalytics)
+library(corrplot)
 ```
 
 
 
-Question from Blinda: too many data source, some are quite similar. 
+(Question from Blinda: too many data source, some are quite similar)
 ```{r message=FALSE, warning=FALSE}
 
 list.files(pattern = "*.csv", 
@@ -28,37 +32,139 @@ files = list.files(pattern="*.csv")
 tbl = lapply(files, read_csv) %>% bind_rows()
 View(tbl)
 tbl_sorted <- tbl %>% group_by(DATE)
+
+dim(tbl_sorted)
+colnames(tbl_sorted)
 ```
 
 
 # Blinda code is here 
-
-look at interest rate
-select time range
-
+## Dataset
+- APIs grab (monthly, time range)
+- data processing (na, lag in time series)
+  
 ```{r}
-df_test <-tbl_sorted
-df_test <- na.omit(df_test) # remove any missing value that might be present 
+
+# select in monthly, time range is 1980-01-01 to 021-03-30
+
+# DGS10 = 10 year rate
+index.monthly <- seq.Date(from = as.Date("1980-01-01"), to = as.Date("2021-03-30"), by = "+1 months")
+getSymbols("DGS10", src = "FRED", from = "1980-01-01", to = "2021-03-30")
+DGS10 <- DGS10[index.monthly]
+DGS10 <- na.approx(DGS10)
+DGS10_chg <- na.omit(diff(DGS10, lag = 1))
 
 
-df <- scale(df)
+plot(DGS10)
 
 
-# 10 year interest rate over time
-tbl_sorted %>%
-  group_by(symbol) %>%
-  plot_time_series(date, adjusted, .facet_ncol = 2, .interactive = FALSE)
-
-# determine time range
-
-
+# FEDFUNDS
+getSymbols("T10YIE", src = "FRED", from = "1980-01-01", to = "2021-03-30")
+FEDFUNDS <- FEDFUNDS[index.monthly]
+FEDFUNDS <- na.approx(FEDFUNDS)
+FEDFUNDS <- xts(FEDFUNDS, order.by = index.monthly)
+FEDFUNDS_chg <- na.omit(diff(FEDFUNDS, lag = 1))
 
 
-# stages of the economic cycle
+# CPIAUCSL = consumer index (inflation)
+getSymbols("CPIAUCSL", src = "FRED", from = "1980-01-01", to = "2021-03-30")
+CPIAUCSL <- CPIAUCSL[index.monthly]
+CPIAUCSL <- na.approx(CPIAUCSL)
+CPIAUCSL <- xts(CPIAUCSL, order.by = index.monthly)
+CPIAUCS_chg <- na.omit(CalculateReturns(CPIAUCSL, method = "log"))
+
+
+# UNRATE = employment rate
+getSymbols("UNRATE", src = "FRED", from = "1980-01-01", to = "2021-03-30")
+UNRATE <- UNRATE[index.monthly]
+UNRATE <- na.approx(UNRATE)
+UNRATE <- xts(UNRATE, order.by = index.monthly)
+UNRATE_chg <- na.omit(diff(UNRATE, lag = 1))
+
+
+# GDPC1 = GDP 
+getSymbols("GDPC1", src = "FRED", from = "1980-01-01", to = "2021-03-30")
+GDPC1 <- GDPC1[index.monthly]
+GDPC1 <- na.approx(GDPC1)
+GDPC1_chg <- na.omit(CalculateReturns(GDPC1, method = "log"))
+
+
+# GFDEBTN = Total Public Debt 
+getSymbols("GFDEBTN", src = "FRED", from = "1980-01-01", to = "2021-03-30")
+GFDEBTN <- GFDEBTN[index.monthly]
+GFDEBTN <- na.approx(GFDEBTN)
+GDPC1_chg <- na.omit(CalculateReturns(GFDEBTN, method = "log"))
+
+
+# GOLDAMGBD228NLBM = gold price 
+getSymbols("GOLDAMGBD228NLBM", src = "FRED", from = "1980-01-01", to = "2021-03-30")
+GOLDAMGBD228NLBM <- GOLDAMGBD228NLBM[index.monthly]
+GOLDAMGBD228NLBM <- na.approx(GOLDAMGBD228NLBM)
+GOLDAMGBD228NLBM_chg <- na.omit(CalculateReturns(GOLDAMGBD228NLBM, method = "log"))
+
+
+#  ^GSPC  = S&P 500 Index 
+getSymbols("^GSPC", src = "yahoo",from = "1980-01-01", to = "2021-03-30")
+snp <- cbind(GOLDAMGBD228NLBM, GSPC$GSPC.Adjusted) 
+snp <- na.approx(snp$GSPC.Adjusted[index.monthly])
+snp.return <- na.omit(CalculateReturns(snp, method = "log"))
+
+
+# combined
+df_test <- cbind(DGS10_chg, FEDFUNDS_chg,CPIAUCS_chg,UNRATE_chg,GDPC1_chg,GOLDAMGBD228NLBM_chg,snp.return)
+
+
+
 ```
 
 
-# Data Summarization
+# Data Summarization (...)
+
+
+# Explore
+
+```{r}
+# cor matrix
+
+correlation <-round(cor(df_test,use = "complete.obs"),2)
+correlation[upper.tri(correlation)] <- 0
+correlation
+
+# print it out 
+# library(xtable)
+# print(xtable(upper), type="html")
+
+
+
+
+# stages of the economic cycle (....)
+
+
+# k means 
+# relatiom btw FEDFUNDS, Gold, CPI; cover any confonder
+
+df_km <- cbind(DGS10_chg, FEDFUNDS_chg,CPIAUCS_chg,GOLDAMGBD228NLBM_chg)
+
+df_km <- na.omit(df_km)
+
+km_out <- kmeans(df_km, centers = 5)  #goodness of the classification k-means
+
+output <- list()
+for(i in 1:6){
+        output[[i]] <- kmeans(coredata(df_km), i)
+}
+output  # maybe k =5
+
+
+# number of observation
+km_out <- kmeans(df_km, centers = 5)
+km_out$size
+km_out$centers
+
+
+```
+
+
 ```{r}
 
 ```

@@ -12,16 +12,29 @@ Author: Noah Love, Blinda Tian
 - An general explanation of the different files/folders if someone were to replicate your study.
 
 (predict interest rate change? or inferences? work on time series)
+generating possible features, then to predict 
+
+
 (or we can use infer whether the US economy has gone through a short or long economic cycle using clustering/k-means) 
+
+
+assess the impact on interest rate with respect to each of the proposed financial variables and to demonstrate the level and when the effects are observed strongly. In order to gain an comphrehensive analysis, we employ two methods, the cluster analysis and linear regression. In conjuture with two methods, we hope to deliver a deeper analysis.  
+
+
 
 ## Introduction
 - intent and finding 
 - have at least one paragraph that discusses the potential for data-snooping for your project.
 
-The low-interest rate has been the world Central Bank's monetary policy since the Covid pandemic hit when they intended to stimulate the overall economy. With economic activity gaining momentum in recent months and the approval of a third U.S. stimulus package in March, the current U.S economy is stronger than expected and  higher inflation and thus wall street has spread out concerns over an interest rate hike soon in the future. Thus, our project is focused on the 10 year treasury yield and its relation to other economic indicators and financial variables. 
+The low-interest rate has been the world Central Bank's monetary policy since the Covid pandemic hit when they intended to stimulate the overall economy. With economic activity gaining momentum in recent months and the approval of a third U.S. stimulus package in March, the current U.S economy is stronger than expected and  higher inflation and thus wall street has spread out concerns over an interest rate hike soon in the future. In short, the unpredecented stimulus package has drived up the market and this has left investors wondering what will the interest rate in the future. In this study, our project aim to investigate the main drivers for the 10 year interest rate and discover its relation to other economic indicators and financial variables. 
+
+
+( 10 year interest rate definition add here....)
+For this study, we will mainly investigate 10 year treasury yield. (what can it serve,purpose,why important,etc)
+
+
 
 The algorithm will helps to discover the pattern over characteristics of 10 year risk-free rate in economic cycle stages. The pattern can be used in (....)
-
 The output can provide information for individual investors or financial institutions to understand about financial market and shed some light on interest rate prediction. 
 
 
@@ -73,16 +86,37 @@ The mechanism of monetary policy (data classification):
 
 
 ## Dataset
-- APIs and  web scraping
+- APIs grab
+- data processing
+
+The dataset can be obtained from the Federal Reserve Bank of St. Louis FRED Database and Yahoo Finance.
+The analysis will be conducted using packages like quantmod (.....) 
+
+
+
+
+
+
+
+## Algorithm
+
+- what drives up interests rate, real underlying factors?
+clustering 
+
+pattern discover 
+
 
 ## Validation
-
+access model accuracy
 
 ## Conclusion
 - intent and finding 
 
 
+xx  is the dominate variable for explaining the 10 year yield.
 
+
+(back to 10 yr function)
 
 ## Final checklist (for reference)
 To complete this portion, I recommend you talk to each other before the full project is finished.
@@ -103,8 +137,8 @@ Arrived at a different conclusion from the given data. (These are simply suggest
 The data sets are difficult to keep track of by themselves. They have to each be downloaded separately. As a result, each is listed here for reference:
 
 consumer_price_index_urban: Consumer Price Index for All Urban Consumers: All Items in U.S. City Average (CPIAUCSL)	
-
 https://fred.stlouisfed.org/series/CPIAUCSL
+
 
 inflation_expectation: University of Michigan: Inflation Expectation (MICH)
 
