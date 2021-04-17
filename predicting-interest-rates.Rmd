@@ -1,10 +1,4 @@
 # Predicting Interest Rates
-
-
-
-
-## Wrangle the data:
-
 ```{r Packages, message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse)
 library(data.table)
@@ -13,7 +7,28 @@ library(quantmod)
 library(zoo)
 library(PerformanceAnalytics)
 library(corrplot)
+library(fredr)
+library(lubridate)
 ```
+
+
+## Introduction
+
+[] motivation of the project
+
+## Audience
+
+
+
+## Datasets!
+
+- FRED
+- DBnomics
+
+
+
+
+## Wrangle the data:
 
 
 
@@ -22,15 +37,13 @@ library(corrplot)
 
 list.files(pattern = "*.csv", 
                full.names = T)   
-
-
 tbl <-
     list.files(pattern = "*.csv", 
                full.names = T) %>% 
     map_df(~read_csv(., col_types = cols(.default = "c"))) 
 files = list.files(pattern="*.csv")
 tbl = lapply(files, read_csv) %>% bind_rows()
-View(tbl)
+#View(tbl)
 tbl_sorted <- tbl %>% group_by(DATE)
 
 dim(tbl_sorted)
@@ -44,128 +57,588 @@ colnames(tbl_sorted)
 - data processing (na, lag in time series)
   
 ```{r}
-
-# select in monthly, time range is 1980-01-01 to 021-03-30
-
-# DGS10 = 10 year rate
-index.monthly <- seq.Date(from = as.Date("1980-01-01"), to = as.Date("2021-03-30"), by = "+1 months")
-getSymbols("DGS10", src = "FRED", from = "1980-01-01", to = "2021-03-30")
-DGS10 <- DGS10[index.monthly]
-DGS10 <- na.approx(DGS10)
-DGS10_chg <- na.omit(diff(DGS10, lag = 1))
+api_key <- "0dc8fa2f5f938907a960e5fd5c20910d"
+fredr_set_key(api_key)
+```
 
 
-plot(DGS10)
+```{r}
+fredr(
+  series_id = "UNRATE",
+  observation_start = as.Date("1980-01-01"),
+  observation_end = as.Date("2000-01-01")
+)
+```
+
+First let's see what the most popular sets of data are!
+
+```{r find top 20 values}
+popular_funds_series <- fredr_series_search_text(
+    search_text = "federal funds",
+    order_by = "popularity",
+    sort_order = "desc",
+    limit = 20
+)
+
+popular_funds_series_id <- popular_funds_series$id
+
+popular_funds_series_id
+
+wanted_funds_series <- c("DGS10", "T10YIE", "CPIAUCSL", "GOLDAMGBD228NLBM")
+```
+
+```{r}
+consumer_price_index_urban <- fredr(
+  series_id = "CPIAUCSL"
+) %>% 
+  rename("consumer_price_index_urban" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date)) 
 
 
-# FEDFUNDS
-getSymbols("T10YIE", src = "FRED", from = "1980-01-01", to = "2021-03-30")
-FEDFUNDS <- FEDFUNDS[index.monthly]
-FEDFUNDS <- na.approx(FEDFUNDS)
-FEDFUNDS <- xts(FEDFUNDS, order.by = index.monthly)
-FEDFUNDS_chg <- na.omit(diff(FEDFUNDS, lag = 1))
+inflation_expectation <- fredr(
+  series_id = "MICH"
+) %>% 
+  rename("inflation_expectation" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(consumer_price_index_urban, inflation_expectation, by = "dates") %>% 
+  select(-date.x, -date.y) 
+
+ten_year_treasury <- fredr(
+  series_id = "DGS10"
+) %>% 
+  rename("ten_year_treasury" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, ten_year_treasury, by = "dates", all = TRUE) %>% 
+  select(-`date`)
 
 
-# CPIAUCSL = consumer index (inflation)
-getSymbols("CPIAUCSL", src = "FRED", from = "1980-01-01", to = "2021-03-30")
-CPIAUCSL <- CPIAUCSL[index.monthly]
-CPIAUCSL <- na.approx(CPIAUCSL)
-CPIAUCSL <- xts(CPIAUCSL, order.by = index.monthly)
-CPIAUCS_chg <- na.omit(CalculateReturns(CPIAUCSL, method = "log"))
+ten_minus_two_treasury <- fredr(
+  series_id = "T10Y2Y"
+) %>% 
+  rename("ten_minus_two_treasury" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, ten_minus_two_treasury, by = "dates", all = TRUE)%>% 
+  select(-date) 
 
 
-# UNRATE = employment rate
-getSymbols("UNRATE", src = "FRED", from = "1980-01-01", to = "2021-03-30")
-UNRATE <- UNRATE[index.monthly]
-UNRATE <- na.approx(UNRATE)
-UNRATE <- xts(UNRATE, order.by = index.monthly)
-UNRATE_chg <- na.omit(diff(UNRATE, lag = 1))
 
 
-# GDPC1 = GDP 
-getSymbols("GDPC1", src = "FRED", from = "1980-01-01", to = "2021-03-30")
-GDPC1 <- GDPC1[index.monthly]
-GDPC1 <- na.approx(GDPC1)
-GDPC1_chg <- na.omit(CalculateReturns(GDPC1, method = "log"))
+
+ten_minus_three_months_treasury <- fredr(
+  series_id = "T10Y3M"
+) %>% 
+  rename("ten_minus_three_months_treasury" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, ten_minus_three_months_treasury, by = "dates", all = TRUE)%>% 
+  select(-date) 
 
 
-# GFDEBTN = Total Public Debt 
-getSymbols("GFDEBTN", src = "FRED", from = "1980-01-01", to = "2021-03-30")
-GFDEBTN <- GFDEBTN[index.monthly]
-GFDEBTN <- na.approx(GFDEBTN)
-GDPC1_chg <- na.omit(CalculateReturns(GFDEBTN, method = "log"))
+
+unemployment_rate <- fredr(
+  series_id = "UNRATE"
+) %>% 
+  rename("unemployment_rate" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, unemployment_rate, by = "dates", all = TRUE)%>% 
+  select(-date) 
 
 
-# GOLDAMGBD228NLBM = gold price 
-getSymbols("GOLDAMGBD228NLBM", src = "FRED", from = "1980-01-01", to = "2021-03-30")
-GOLDAMGBD228NLBM <- GOLDAMGBD228NLBM[index.monthly]
-GOLDAMGBD228NLBM <- na.approx(GOLDAMGBD228NLBM)
-GOLDAMGBD228NLBM_chg <- na.omit(CalculateReturns(GOLDAMGBD228NLBM, method = "log"))
 
 
-#  ^GSPC  = S&P 500 Index 
-getSymbols("^GSPC", src = "yahoo",from = "1980-01-01", to = "2021-03-30")
-snp <- cbind(GOLDAMGBD228NLBM, GSPC$GSPC.Adjusted) 
-snp <- na.approx(snp$GSPC.Adjusted[index.monthly])
-snp.return <- na.omit(CalculateReturns(snp, method = "log"))
+real_gdp <- fredr(
+  series_id = "GDPC1"
+) %>% 
+  rename("real_gdp" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, real_gdp, by = "dates", all = TRUE)%>% 
+  select(-date) 
 
 
-# combined
-df_test <- cbind(DGS10_chg, FEDFUNDS_chg,CPIAUCS_chg,UNRATE_chg,GDPC1_chg,GOLDAMGBD228NLBM_chg,snp.return)
+
+eff_fed_funds_rate <- fredr(
+  series_id = "FEDFUNDS"
+) %>% 
+  rename("eff_fed_funds_rate" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, eff_fed_funds_rate, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+
+gdp <- fredr(
+  series_id = "GDP"
+) %>% 
+  rename("gdp" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, gdp, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+
+thirty_year_fixed_mortgage <- fredr(
+  series_id = "MORTGAGE30US"
+) %>% 
+  rename("thirty_year_fixed_mortgage" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, thirty_year_fixed_mortgage, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+velocity_of_mtwo <- fredr(
+  series_id = "M2V"
+) %>% 
+  rename("velocity_of_mtwo" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, velocity_of_mtwo, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+m_one <- fredr(
+  series_id = "M1SL"
+) %>% 
+  rename("m_one" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, m_one, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+
+m_two <- fredr(
+  series_id = "M2SL"
+) %>% 
+  rename("m_two" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, m_two, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+all_employees_minus_farmers <- fredr(
+  series_id = "PAYEMS"
+) %>% 
+  rename("all_employees_minus_farmers" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, all_employees_minus_farmers, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+personal_savings_rate <- fredr(
+  series_id = "PSAVERT"
+) %>% 
+  rename("personal_savings_rate" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, personal_savings_rate, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+
+aaa_corporate_bond_yield <-  fredr(
+  series_id = "AAA"
+) %>% 
+  rename("aaa_corporate_bond_yield" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, aaa_corporate_bond_yield, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+personal_consumption_expenditures <- fredr(
+  series_id = "PCE"
+) %>% 
+  rename("personal_consumption_expenditures" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, personal_consumption_expenditures, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+industrial_production_index <- fredr(
+  series_id = "INDPRO"
+) %>% 
+  rename("industrial_production_index" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, industrial_production_index, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+federal_debt_total <- fredr(
+  series_id = "GFDEBTN"
+) %>% 
+  rename("federal_debt_total" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, federal_debt_total, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+labor_force_participation_rate <- fredr(
+  series_id = "CIVPART"
+) %>% 
+  rename("labor_force_participation_rate" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, labor_force_participation_rate, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+consumer_price_index_nationwide <- fredr(
+  series_id = "CPALTT01USM657N"
+) %>% 
+  rename("consumer_price_index_nationwide" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, consumer_price_index_nationwide, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+
+s_and_p <- fredr(
+  series_id = "CSUSHPINSA"
+) %>% 
+  rename("s_and_p" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, s_and_p, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+
+m_three <- fredr(
+  series_id = "MABMM301USM189S"
+) %>% 
+  rename("m_three" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, m_three, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+federal_surplus_or_deficit <-  fredr(
+  series_id = "FYFSD"
+) %>% 
+  rename("federal_surplus_or_deficit" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))%>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, federal_surplus_or_deficit, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+
+house_price_index_nationwide <- fredr(
+  series_id = "USSTHPI"
+) %>% 
+  rename("house_price_index_nationwide" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))%>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, house_price_index_nationwide, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+total_vehicle_sales <- fredr(
+  series_id = "TOTALSA"
+) %>% 
+  rename("total_vehicle_sales" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))%>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, total_vehicle_sales, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+
+federal_debt_percent_of_gdp <-  fredr(
+  series_id = "GFDEGDQ188S"
+) %>% 
+  rename("federal_debt_percent_of_gdp" = value) %>% 
+  select(-realtime_start, -realtime_end, - series_id) %>% 
+  mutate(dates = as.numeric(date))
+
+df <- merge(df, federal_debt_percent_of_gdp, by = "dates", all = TRUE)%>% 
+  select(-date) 
+
+
+```
+
+```{r}
+df$dates <- as.Date(df$dates) 
+
+df <- as_tibble(df)
+
+dim(df)
+
+```
+
+# Data Summarization
+
+The data as a whole is a beautiful combination of the most downloaded data sources and a variety of different gauges of the market and the United States as a whole.
+
+We initially began by graphing a variety of sources to see how they compare. At first, I thought something was wrong with our data. Below is a graph of Federal Surplus or Deficient (FYFSD) and the US real gross domestic product (GDP). No matter what we graphed against our deficit, everything else appeared to be flat. In reality, this just goes to show the shear size of the deficit the United States is running. 
+
+```{r}
+map_dfr(c("FYFSD", "GDPC1"), fredr) %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate", color = "Series")
+    
+```
+
+When everything else is compared to each other, they seem more more reasonable. For example, this shows the Unemployment rate and the federal funds rate. 
+
+
+```{r}
+map_dfr(c("UNRATE", "FEDFUNDS"), fredr) %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate", color = "Series")
+```
+
+Some of the results are interesting to see if they match our intuition. For example, personal savings rate and vehicle sales! 
+```{r}
+map_dfr(c("TOTALSA", "PSAVERT"), fredr) %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate", color = "Series")
+```
+
+It seems much further off than I expected. Vehicle sales seem almost constant (in teal) with the exception of recessions, before immediately coming back. Personal savings however have seen a steady decrease regardless, although the stimulus appears to have had an amazing effect!
+
+```{r}
+head(df$dates)
+
+modern_df <- filter(df, dates >= "1980-01-01")
+modern_df
+
+linear_model <- lm(data = df, inflation_expectation ~ .)
+```
+
+## Problems !
+One of the immediate problems with the data was the somewhat random in when it was gathered. Some daily, some monthly, and some seemingly randomly. Others were done by quarter (once every three months), but of course they aren't always released on the first of the month and because we have merged the data daily, it makes it really hard to run any algorithms on. So instead, we shall create a few very clean data frames that are averages. So we created two data frames that were grouped by month and year, averaging the values and ignoring missing values. 
+
+```{r}
+
+df_monthly <- df %>%
+  group_by(month = floor_date(dates, "month")) %>%
+  summarise(
+    consumer_price_index_urban = mean(consumer_price_index_urban, na.rm = TRUE),
+    inflation_expectation = mean(inflation_expectation, na.rm = TRUE),
+    ten_year_treasury = mean(ten_year_treasury, na.rm = TRUE),
+    ten_minus_two_treasury = mean(ten_minus_two_treasury, na.rm = TRUE),
+    ten_minus_three_months_treasury = mean(ten_minus_three_months_treasury, na.rm = TRUE),
+    unemployment_rate = mean(unemployment_rate, na.rm = TRUE),
+    real_gdp = mean(real_gdp, na.rm = TRUE),
+    eff_fed_funds_rate = mean(eff_fed_funds_rate, na.rm = TRUE),
+    gdp = mean(gdp, na.rm = TRUE),
+    thirty_year_fixed_mortgage = mean(thirty_year_fixed_mortgage, na.rm = TRUE),
+    m_two = mean(m_two, na.rm = TRUE),
+    velocity_of_mtwo = mean(velocity_of_mtwo, na.rm = TRUE),
+    m_one = mean(m_one, na.rm = TRUE),
+    all_employees_minus_farmers = mean(all_employees_minus_farmers, na.rm = TRUE),
+    aaa_corporate_bond_yield = mean(aaa_corporate_bond_yield, na.rm = TRUE),
+    personal_savings_rate = mean(personal_savings_rate, na.rm = TRUE),
+    personal_consumption_expenditures = mean(personal_consumption_expenditures, na.rm = TRUE),
+    industrial_production_index = mean(industrial_production_index, na.rm = TRUE),
+    federal_debt_total = mean(federal_debt_total, na.rm = TRUE),
+    labor_force_participation_rate = mean(labor_force_participation_rate, na.rm = TRUE),
+    consumer_price_index_nationwide = mean(consumer_price_index_nationwide, na.rm = TRUE),
+    s_and_p = mean(s_and_p, na.rm = TRUE),
+    m_three = mean(m_three, na.rm = TRUE),
+    federal_surplus_or_deficit = mean(federal_surplus_or_deficit, na.rm = TRUE),
+    house_price_index_nationwide = mean(house_price_index_nationwide, na.rm = TRUE),
+    total_vehicle_sales = mean(total_vehicle_sales, na.rm = TRUE),
+    federal_debt_percent_of_gdp = mean(federal_debt_percent_of_gdp, na.rm = TRUE)
+)
 
 
 
 ```
 
+```{r}
+df_yearly <- df %>%
+  group_by(year = floor_date(dates, "year")) %>%
+  summarise(
+    consumer_price_index_urban = mean(consumer_price_index_urban, na.rm = TRUE),
+    inflation_expectation = mean(inflation_expectation, na.rm = TRUE),
+    ten_year_treasury = mean(ten_year_treasury, na.rm = TRUE),
+    ten_minus_two_treasury = mean(ten_minus_two_treasury, na.rm = TRUE),
+    ten_minus_three_months_treasury = mean(ten_minus_three_months_treasury, na.rm = TRUE),
+    unemployment_rate = mean(unemployment_rate, na.rm = TRUE),
+    real_gdp = mean(real_gdp, na.rm = TRUE),
+    eff_fed_funds_rate = mean(eff_fed_funds_rate, na.rm = TRUE),
+    gdp = mean(gdp, na.rm = TRUE),
+    thirty_year_fixed_mortgage = mean(thirty_year_fixed_mortgage, na.rm = TRUE),
+    m_two = mean(m_two, na.rm = TRUE),
+    velocity_of_mtwo = mean(velocity_of_mtwo, na.rm = TRUE),
+    m_one = mean(m_one, na.rm = TRUE),
+    all_employees_minus_farmers = mean(all_employees_minus_farmers, na.rm = TRUE),
+    aaa_corporate_bond_yield = mean(aaa_corporate_bond_yield, na.rm = TRUE),
+    personal_savings_rate = mean(personal_savings_rate, na.rm = TRUE),
+    personal_consumption_expenditures = mean(personal_consumption_expenditures, na.rm = TRUE),
+    industrial_production_index = mean(industrial_production_index, na.rm = TRUE),
+    federal_debt_total = mean(federal_debt_total, na.rm = TRUE),
+    labor_force_participation_rate = mean(labor_force_participation_rate, na.rm = TRUE),
+    consumer_price_index_nationwide = mean(consumer_price_index_nationwide, na.rm = TRUE),
+    s_and_p = mean(s_and_p, na.rm = TRUE),
+    m_three = mean(m_three, na.rm = TRUE),
+    federal_surplus_or_deficit = mean(federal_surplus_or_deficit, na.rm = TRUE),
+    house_price_index_nationwide = mean(house_price_index_nationwide, na.rm = TRUE),
+    total_vehicle_sales = mean(total_vehicle_sales, na.rm = TRUE),
+    federal_debt_percent_of_gdp = mean(federal_debt_percent_of_gdp, na.rm = TRUE)
+)
 
-# Data Summarization (...)
+df_yearly_cleaned <- na.omit(df_yearly)
+
+df_yearly_cleaned
+```
 
 
 # Explore
 
 ```{r}
+
+```
+
+
+
+```{r}
+correlation_matrix <- round(cor(df_yearly,use = "complete.obs"),2)
+```
+
+
+
+```{r}
 # cor matrix
 
-correlation <-round(cor(df_test,use = "complete.obs"),2)
-correlation[upper.tri(correlation)] <- 0
-correlation
-
-# print it out 
-# library(xtable)
-# print(xtable(upper), type="html")
-
-
-
-
-# stages of the economic cycle (....)
-
-
-# k means 
-# relatiom btw FEDFUNDS, Gold, CPI; cover any confonder
-
-df_km <- cbind(DGS10_chg, FEDFUNDS_chg,CPIAUCS_chg,GOLDAMGBD228NLBM_chg)
-
-df_km <- na.omit(df_km)
-
-km_out <- kmeans(df_km, centers = 5)  #goodness of the classification k-means
-
-output <- list()
-for(i in 1:6){
-        output[[i]] <- kmeans(coredata(df_km), i)
-}
-output  # maybe k =5
-
-
-# number of observation
-km_out <- kmeans(df_km, centers = 5)
-km_out$size
-km_out$centers
+# correlation <-round(cor(df_test,use = "complete.obs"),2)
+# correlation[upper.tri(correlation)] <- 0
+# correlation
+# 
+# # print it out
+# # library(xtable)
+# # print(xtable(upper), type="html")
+# 
+# 
+# 
+# 
+# # stages of the economic cycle (....)
+# 
+# 
+# # k means
+# # relatiom btw FEDFUNDS, Gold, CPI; cover any confonder
+# 
+# df_km <- cbind(DGS10_chg, FEDFUNDS_chg,CPIAUCS_chg,GOLDAMGBD228NLBM_chg)
+# 
+# df_km <- na.omit(df_km)
+# 
+# km_out <- kmeans(df_km, centers = 5)  #goodness of the classification k-means
+# 
+# output <- list()
+# for(i in 1:6){
+#         output[[i]] <- kmeans(coredata(df_km), i)
+# }
+# output  # maybe k =5
+# 
+# 
+# # number of observation
+# km_out <- kmeans(df_km, centers = 5)
+# km_out$size
+# km_out$centers
 
 
 ```
 
 
 ```{r}
+gdp_df <- df %>% 
+  select(gdp, real_gdp, dates) %>% 
+  rename(DATE = dates)
+
+gdp_df <- gdp_df[complete.cases(gdp_df), ]
+```
+
+
+Fun visualization to compare GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value. 
+```{r}
+map_dfr(c("GDP", "GDPC1"), fredr) %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate", color = "Series")
 
 ```
+
+
+## Conclusion
+
+### Value
+
+Saved time? Decreased uncertainty? What did we find?
+
+
+
+
+
+
+
+
+
+
+Checklist
+[] algorithm to explore the relationship between different features in the data
+- graphical summary
+- quantitative evaluation
+- engineer a feature
+
+[] Veryify results
+- subset?
+- How robust is this?
+- Uncertainty? How does this affect the conclusions
+
+[] Discussion of data dredging/snooping
+
+[] github readme
+
+
+
+
 
