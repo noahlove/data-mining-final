@@ -16,6 +16,8 @@ library(plotly)
 library(xgboost)    # used for building XGBoost model
 library(e1071)      # used for skewness
 library(cowplot)    # used for combining multiple plots 
+library(ggcorrplot)
+library(RColorBrewer) #PCA Viz
 ```
 
 
@@ -39,52 +41,22 @@ library(cowplot)    # used for combining multiple plots
 
 
 
-(Question from Blinda: too many data source, some are quite similar)
-```{r message=FALSE, warning=FALSE}
-
-list.files(pattern = "*.csv", 
-               full.names = T)   
-tbl <-
-    list.files(pattern = "*.csv", 
-               full.names = T) %>% 
-    map_df(~read_csv(., col_types = cols(.default = "c"))) 
-files = list.files(pattern="*.csv")
-tbl = lapply(files, read_csv) %>% bind_rows()
-#View(tbl)
-tbl_sorted <- tbl %>% group_by(DATE)
-
-dim(tbl_sorted)
-colnames(tbl_sorted)
-```
-
-
-# Blinda code is here 
 ## Dataset
-- APIs grab (monthly, time range)
-- data processing (na, lag in time series)
-  
-```{r}
+
+```{r API, include=FALSE}
 api_key <- "0dc8fa2f5f938907a960e5fd5c20910d"
 fredr_set_key(api_key)
 ```
 
 
-```{r}
-fredr(
-  series_id = "UNRATE",
-  observation_start = as.Date("1980-01-01"),
-  observation_end = as.Date("2000-01-01")
-)
-```
-
 First let's see what the most popular sets of data are!
 
-```{r find top 20 values}
+```{r find top 5 values}
 popular_funds_series <- fredr_series_search_text(
     search_text = "federal funds",
     order_by = "popularity",
     sort_order = "desc",
-    limit = 20
+    limit = 5
 )
 
 popular_funds_series_id <- popular_funds_series$id
@@ -441,6 +413,17 @@ map_dfr(c("UNRATE", "FEDFUNDS"), fredr) %>%
     labs(x = "Observation Date", y = "Rate", color = "Series")
 ```
 
+Fun visualization to compare GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value. 
+
+```{r message=FALSE, warning=FALSE}
+map_dfr(c("GDP", "GDPC1"), fredr) %>%
+  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
+    geom_line() +
+    labs(x = "Observation Date", y = "Rate", color = "Series")
+
+
+```
+
 Some of the results are interesting to see if they match our intuition. For example, personal savings rate and vehicle sales! 
 ```{r}
 map_dfr(c("TOTALSA", "PSAVERT"), fredr) %>%
@@ -452,12 +435,9 @@ map_dfr(c("TOTALSA", "PSAVERT"), fredr) %>%
 It seems much further off than I expected. Vehicle sales seem almost constant (in teal) with the exception of recessions, before immediately coming back. Personal savings however have seen a steady decrease regardless, although the stimulus appears to have had an amazing effect!
 
 ```{r}
-head(df$dates)
-
 modern_df <- filter(df, dates >= "1980-01-01")
 modern_df
 
-linear_model <- lm(data = df, inflation_expectation ~ .)
 ```
 
 ## Problems !
@@ -551,9 +531,6 @@ monthly_nas <- df_monthly_modern %>%
   summarise_all(funs(sum(is.na(.))))
 
 monthly_nas
-
-View(df_monthly_modern)
-
 ```
 
 This yielded an interesting finding. In fact, there appear to be two types of data here. Data collected quarterly and data collected monthly (or even more granularly). Then there are exceptions like total federal debt which is collected once each year in september. So in this way, the data was split into 2 groups. 
@@ -811,6 +788,37 @@ get_best_result(inflation_elnet_best)
 We end up with very similar results: because alpha is at 1 so it is practicly doing the exact same algorithm as above. 
 
 
+## Principal Component Analysis
+
+```{r}
+obs_x <- na.omit(data_monthly) %>% 
+  rename(date = month)
+
+ord <- order(obs_x$date)
+obs_x <- obs_x[ord, ]
+dates <- as.Date(obs_x$date)
+obs_x$date <- NULL
+obs_x <- sapply(obs_x, diff)
+
+pr_out <- prcomp(obs_x, center=TRUE, scale=TRUE)
+
+```
+
+```{r}
+plot(cumsum(pr_out$sdev^2)/ sum(pr_out$sdev^2))
+abline(h = 0.95)
+
+#same number of rows as x, with only two most efficient columns
+W <-  pr_out$x[,1:2]
+
+plot(pr_out$sdev, main="")
+```
+
+Appears to be a noticable drop off at 5 actually.
+
+
+
+
 ```{r}
 # cor matrix
 
@@ -853,23 +861,8 @@ We end up with very similar results: because alpha is at 1 so it is practicly do
 ```
 
 
-```{r}
-gdp_df <- df %>% 
-  select(gdp, real_gdp, dates) %>% 
-  rename(DATE = dates)
-
-gdp_df <- gdp_df[complete.cases(gdp_df), ]
-```
 
 
-Fun visualization to compare GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value. 
-```{r}
-map_dfr(c("GDP", "GDPC1"), fredr) %>%
-  ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
-    geom_line() +
-    labs(x = "Observation Date", y = "Rate", color = "Series")
-
-```
 
 
 ## Conclusion
