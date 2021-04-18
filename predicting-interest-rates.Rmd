@@ -9,6 +9,11 @@ library(PerformanceAnalytics)
 library(corrplot)
 library(fredr)
 library(lubridate)
+library(glmnet)
+library(caret)
+library(elasticnet)
+library(reshape2)
+library(plotly)
 ```
 
 
@@ -568,12 +573,38 @@ data_quarterly <- df_monthly %>%
 data_quarterly
 ```
 
+For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metrix calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
 
+```{r}
+linear_model_yearly <- lm(data = df_yearly_cleaned, inflation_expectation ~ .)
+
+summary(linear_model_yearly)
+```
+
+Unsurprisingly, there is not a ton of significance throughout, and there is likely high colinearity between many of these. However, it is interesting to look at what was pulled through so far. Of the features that had a significance code, total vehicle sales and M2 money supply seem to be the most impactful. M2 money is a count of all money including cash and checking deposits (M1) as well as money saved in savings accounts, money market securities, mutual funds and other time deposits. In a sense, it is a good gauge of how much physical money Americans have that they are able to spend. 
 
 
 ```{r}
-correlation_matrix <- round(cor(df_yearly,use = "complete.obs"),2)
+df_yearly_minus_date <- df_yearly_cleaned %>% select(-year)
+
+correlation_df <- round(cor(df_yearly_minus_date),2)
+
+correlation_df_melt <- melt(correlation_df)
+gz <- ggplot(correlation_df_melt, mapping = aes(x = Var1, y = Var2, fill = value)) + 
+  geom_tile() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme(text = element_text(size = 8)) + 
+  ggtitle("Heat map for correlation") + 
+  ylab("")+
+  xlab("")+
+  scale_fill_distiller(palette = "RdPu")
+ggplotly(gz, tooltip = "text")
+
 ```
+From an even very brief glance, we can see quite a few of our features of very correlated. In a sense, this should be expected in a finance market with everything working together. For example, the Effective federal funds rate is designed to regulate many of the other features we have in our dataset, so it seems reasonable they are correlated. Also, some features are derivatives of others such as federal deficit and federal debt. 
+
+
+
 
 
 
