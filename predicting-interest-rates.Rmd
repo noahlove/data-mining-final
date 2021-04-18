@@ -19,6 +19,7 @@ library(cowplot)    # used for combining multiple plots
 library(ggcorrplot)
 library(RColorBrewer) #PCA Viz
 library(idbr) #for population data (census)
+require(reshape2) #plotting all columns
 ```
 
 ```{r API, include=FALSE}
@@ -105,7 +106,7 @@ As a result, we ended up calling 27 different datasets and combining them togeth
 - eff_fed_funds_rate
 
 
-```{r Import Data, message=FALSE, warning=FALSE, include=FALSE}
+```{r Import Data, message=FALSE, warning=FALSE, include=FALSE, cache = TRUE}
 consumer_price_index_urban <- fredr(
   series_id = "CPIAUCSL"
 ) %>% 
@@ -434,43 +435,48 @@ Additionally, not all data was collected starting in the same timeframe. For exa
 However in the end, through the use of `merge `, we were able to build one complete dataset out of 27 different sources and with more than 16,000 rows.
 
 
-## Data Summarization
+## Data Exploration
 
 The data as a whole is a beautiful combination of the most downloaded data sources and a variety of different gauges of the market and the United States as a whole.
 
-We initially began by graphing a variety of sources to see how they compare. At first, I thought something was wrong with our data. Below is a graph of Federal Surplus or Deficient (FYFSD) and the US real gross domestic product (GDP). No matter what we graphed against our deficit, everything else appeared to be flat. In reality, this just goes to show the shear size of the deficit the United States is running. 
+We initially began by graphing a variety of sources to see how they compare. At first, I thought something was wrong with our data. Below is a graph of Federal Surplus or Deficit (FYFSD) and the US real gross domestic product (GDPC1). 
 
-```{r}
+```{r echo=FALSE}
 map_dfr(c("FYFSD", "GDPC1"), fredr) %>%
   ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
     geom_line() +
     labs(x = "Observation Date", y = "Rate", color = "Series")
-    
 ```
 
-When everything else is compared to each other, they seem more more reasonable. For example, this shows the Unemployment rate and the federal funds rate. 
+No matter what we graphed against the US deficit, everything else appeared to be flat. In reality, this just goes to show the shear size of the deficit the United States is running. In fact, 3 trillion next to almost any other number in our data set is massive. This may be important to remember later, and make sure this dataset isn't having undue influence on our models. 
 
+When everything else is compared to each other, they seem more more reasonable. For example, this shows the unemployment rate (UNRATE) and the federal funds rate (FEDFUNDS). 
 
-```{r}
+```{r echo=FALSE}
 map_dfr(c("UNRATE", "FEDFUNDS"), fredr) %>%
   ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
     geom_line() +
     labs(x = "Observation Date", y = "Rate", color = "Series")
 ```
 
-Fun visualization to compare GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value. 
+Data like this actually appears really interesting and is telling the closer you look at it. At first, it may appear just like noise when in fact there really is a relationship at play. The federal funds rate appears to spike, immediately followed by the unemployment rate. In a sense, the unemployment rate is trailing the federal funds rate. 
 
-```{r message=FALSE, warning=FALSE}
+In reality, its not quite as simple. More often when economic times are good, the federal funds rate is raising, so that it can be lowered when the unemployment rate rises. It is a tool for economists to try and help the economy. And after a while, another recession uccurs which forces the rate back down to drive inflation. 
+
+In terms of data manipulation, this graph could be slightly difficult for something like regression to parse. In a sense, the data is incredibly time dependent being time series data and as a result, may not fit well in basic regression especially. 
+
+Other graphs showed other very intertwined relationships. For example, there is not much closer than comparing GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 map_dfr(c("GDP", "GDPC1"), fredr) %>%
   ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
     geom_line() +
     labs(x = "Observation Date", y = "Rate", color = "Series")
-
-
 ```
 
 Some of the results are interesting to see if they match our intuition. For example, personal savings rate and vehicle sales! 
-```{r}
+
+```{r echo=FALSE}
 map_dfr(c("TOTALSA", "PSAVERT"), fredr) %>%
   ggplot(data = ., mapping = aes(x = date, y = value, color = series_id)) +
     geom_line() +
@@ -479,14 +485,14 @@ map_dfr(c("TOTALSA", "PSAVERT"), fredr) %>%
 
 It seems much further off than I expected. Vehicle sales seem almost constant (in teal) with the exception of recessions, before immediately coming back. Personal savings however have seen a steady decrease regardless, although the stimulus appears to have had an amazing effect!
 
-```{r}
-modern_df <- filter(df, dates >= "1980-01-01")
-modern_df
 
-```
+## More problems with dates !
 
-## Problems !
-One of the immediate problems with the data was the somewhat random in when it was gathered. Some daily, some monthly, and some seemingly randomly. Others were done by quarter (once every three months), but of course they aren't always released on the first of the month and because we have merged the data daily, it makes it really hard to run any algorithms on. So instead, we shall create a few very clean data frames that are averages. So we created two data frames that were grouped by month and year, averaging the values and ignoring missing values. 
+One of the immediate problems with the data was the somewhat random in when it was gathered. Some daily, some monthly, and some seemingly randomly. Others were done by quarter (once every three months), but of course they aren't always released on the first of the month and because we have merged the data daily, it makes it really hard to run any algorithms on. 
+
+As an example, the federal debt appears to be gathered just once a year in September, whereas other data is gathered every single day. So the data needed to be processed in such as way that we could more easily work with it. 
+
+So instead, we shall create a few very clean data frames that are averages. So we created two data frames that were grouped by month and year, averaging the values and ignoring missing values. 
 
 ```{r}
 
