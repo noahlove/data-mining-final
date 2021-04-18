@@ -18,21 +18,21 @@ library(e1071)      # used for skewness
 library(cowplot)    # used for combining multiple plots 
 library(ggcorrplot)
 library(RColorBrewer) #PCA Viz
+library(idbr) #for population data (census)
 ```
 
 
 ## Introduction
 
-[] motivation of the project
+Both Blinda and I had a fascination with economics data and were particularly interested in finding ways to apply the techniques we have learned in data mining to the field of economics. In many cases, "economics" as an entire field seems way too daunting to attack as a whole. However, in some sense, that seems like a perfect reason to pick it for a data mining project! We could download a massive amount of rather tangentially related data, and find patterns or facts that we find interesting. In the end, our goal was to hopefully build some sort of algorithm or model that backs up the intuition that we have created learning Economics while at Columbia. Of course much of economics comes down to really cool new techniques for finding casual inferences like difference-in-difference and regression discontinuities, but we think some really interesting conclusions should be available with other tools. 
 
-## Audience
-
-
+As such our audience for this paper and topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMS. 
 
 ## Datasets!
 
 - FRED
 - DBnomics
+- Census
 
 
 
@@ -45,7 +45,12 @@ library(RColorBrewer) #PCA Viz
 
 ```{r API, include=FALSE}
 api_key <- "0dc8fa2f5f938907a960e5fd5c20910d"
+
 fredr_set_key(api_key)
+
+
+idb_api_key("ff03f4c2d4f1a380a4e05b83b2515e75f900bf00")
+
 ```
 
 
@@ -861,6 +866,58 @@ Appears to be a noticable drop off at 5 actually.
 ```
 
 
+## Engineer features based on population
+Here we introduce population data from the census in order to hopefully look at per capita figures. This should hopefully find some new realizations. The US Census API actually has data for the entire world which is fascinating! So maybe we
+
+
+```{r}
+lex <- get_idb(
+  country = "all",
+  year = 2021,
+  variables = c("name", "e0"),
+  geometry = TRUE
+)
+
+ggplot(lex, aes(fill = e0)) + 
+  theme_bw() + 
+  geom_sf() + 
+  coord_sf(crs = 'ESRI:54030') + 
+  scale_fill_viridis_c() + 
+  labs(fill = "Life expectancy \nat birth (2021)")
+```
+
+```{r}
+population <- get_idb(
+  country = "USA",
+  year = 1978:2021,
+  age = 0:100,
+  sex = c("male", "female")
+) %>% 
+  group_by(year) %>% 
+  summarise(population = sum(pop)) 
+
+ggplot(data = population, mapping = aes(x = year, y = population)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_y_continuous("Populations") +
+  scale_x_continuous()+
+  labs(title = "Population of the USA", subtitle = "Nothing very surprising here")
+  
+```
+
+Out of caution, this will only be applied to the yearly data as this is the most granular level we have. In the future, you could linearly estimate the data assuming an equal distribution of birthdays throughout the year and that should be close. 
+```{r}
+population$year <- as.Date(ISOdate(population$year, 1, 1))
+
+data_per_capita <- merge(df_yearly_cleaned, population) %>% 
+  mutate(car_sales_percap = total_vehicle_sales / population) %>% 
+  mutate(house_price_percap = house_price_index_nationwide / population) %>% 
+  mutate(s_and_p_percap = s_and_p / population) %>% 
+  mutate(m_two_percap = m_two / population)
+```
+The reason to create this type of feature is actually a much more helpful way of standardizing some of these values. For example, car sales will naturally climb with more people. But if it climbs per capita that would be a good indicator that inflationary levels and expecations. House prices could be affected in a similar way. 
+
+From our initial regression, we know that m2 money was important. However, this could be inappropriate because there should be more money with a lot more people so this is helpful to make sure that truly is significant. 
 
 
 
