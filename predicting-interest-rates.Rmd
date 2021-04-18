@@ -627,6 +627,51 @@ Although the text is not readable (for now), the correlation is better shown whe
 Of course, now the immediate next step is likely to try Ridge, Lasso and Elasticnet. These should "fix", at least to some extent the problem of multicolinearity. 
 
 
+## Working with monthly data
+To get a more granular approach which is more appropriate, the other techniques will be tried on the monthly data instead of the yearly. 
+
+## Train and Test
+
+Note: It may be worth while to bootstrap or upsample here. 
+
+The data will be split into train and test datasets. The model will be trained on the train data and evaluated on the test data.
+
+```{r}
+
+data_monthly_dateless <- data_monthly %>% 
+  select(-month)
+
+set.seed(100) 
+
+
+index = sample(1:nrow(data_monthly_dateless), 0.7*nrow(data_monthly_dateless)) 
+
+train = data_monthly_dateless[index,] # Create the training data 
+test = data_monthly_dateless[-index,] # Create the test data
+dim(train)
+dim(test)
+```
+
+
+```{r}
+cols <-  colnames(data_monthly_dateless) 
+
+pre_proc_val <- preProcess(train[,cols], method = c("center", "scale"))
+train[,cols] = predict(pre_proc_val, train[,cols])
+test[,cols] = predict(pre_proc_val, test[,cols])
+
+
+```
+
+
+Scaled Linear Model
+```{r}
+linear_scaled <- lm(inflation_expectation ~ . , data = train)
+summary(linear_scaled)
+```
+
+These are more exciting results! Using the scaled monthly data, we have some very significant results with non-trivial estimates. Things that we think effect our inflation expectation: how the cost of a basket of goods changes nationwide, the ten year treasury note, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. As would be expected, the bonds, the unemployment rate and the number of employees are all inversely correlated. We would assume prices won't be forced up when there are still people that want work, or when the bond yields are really high. 
+
 
 
 ```{r}
