@@ -532,12 +532,42 @@ df_yearly_cleaned <- na.omit(df_yearly)
 df_yearly_cleaned
 ```
 
+In fact, to show a point of how inconcistent some of the data was, simply cleaning the data by pulling only months where all data series had at least an entry yields absolutely no months. So instead, for the monthly approach, we decided to take a different approach. Instead, we started eliminating poor data features, ones that didn't line up enough with the majority of the data we had. 
 
 # Explore
 
 ```{r}
+df_monthly_modern <- df_monthly %>% 
+  filter(month >= "1987-01-01")
+
+monthly_nas <- df_monthly_modern %>% 
+  summarise_all(funs(sum(is.na(.))))
+
+monthly_nas
+
+View(df_monthly_modern)
 
 ```
+
+This yielded an interesting finding. In fact, there appear to be two types of data here. Data collected quarterly and data collected monthly (or even more granularly). Then there are exceptions like total federal debt which is collected once each year in september. So in this way, the data was split into 2 groups. 
+
+```{r}
+data_monthly <- df_monthly %>% 
+  select(-real_gdp, -gdp, -velocity_of_mtwo, -federal_debt_total, -federal_surplus_or_deficit, -house_price_index_nationwide, -house_price_index_nationwide, -federal_debt_percent_of_gdp) %>% 
+  na.omit()
+  
+data_monthly
+```
+
+
+```{r}
+data_quarterly <- df_monthly %>% 
+  select(-federal_debt_total, - federal_debt_percent_of_gdp, -federal_surplus_or_deficit) %>% 
+  na.omit()
+
+data_quarterly
+```
+
 
 
 
