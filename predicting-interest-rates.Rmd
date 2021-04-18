@@ -111,10 +111,6 @@ ten_minus_two_treasury <- fredr(
 df <- merge(df, ten_minus_two_treasury, by = "dates", all = TRUE)%>% 
   select(-date) 
 
-
-
-
-
 ten_minus_three_months_treasury <- fredr(
   series_id = "T10Y3M"
 ) %>% 
@@ -384,6 +380,7 @@ df <- merge(df, federal_debt_percent_of_gdp, by = "dates", all = TRUE)%>%
 
 
 ```
+
 
 ```{r}
 df$dates <- as.Date(df$dates) 
