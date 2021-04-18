@@ -416,7 +416,7 @@ df <- merge(df, federal_debt_percent_of_gdp, by = "dates", all = TRUE)%>%
 ```
 
 
-```{r}
+```{r include=FALSE}
 df$dates <- as.Date(df$dates) 
 
 df <- as_tibble(df)
@@ -425,7 +425,16 @@ dim(df)
 
 ```
 
-# Data Summarization
+## Data wrangling 
+
+Because the data comes from the same source, we assumed that they would merge together nicely; however, this was not the case. The primary problem was when the data was collected. and for most datasets this was different. In general, data was collected either: daily, weekly, monthly, quarterly or yearly. However, this means that not every dataframe had the same dates to merge on, so the final data frame had a large amount of NAs. 
+
+Additionally, not all data was collected starting in the same timeframe. For example, federal debt has existed for longer than the inception of some of the other metrics. As a result, some debt data goes all the way back to January of 1901 (through the API at least), whereas other datasets start as recently as 1987.
+
+However in the end, through the use of `merge `, we were able to build one complete dataset out of 27 different sources and with more than 16,000 rows.
+
+
+## Data Summarization
 
 The data as a whole is a beautiful combination of the most downloaded data sources and a variety of different gauges of the market and the United States as a whole.
 
