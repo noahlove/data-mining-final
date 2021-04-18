@@ -1,19 +1,21 @@
 # Predicting Interest Rates
 ```{r Packages, message=FALSE, warning=FALSE, include=FALSE}
-library(tidyverse)
-library(data.table)
-library(dplyr)
+library(tidyverse) # used for everything
+library(data.table) # helpful with big table manipulations
 library(quantmod)
 library(zoo)
-library(PerformanceAnalytics)
-library(corrplot)
+library(PerformanceAnalytics) 
+library(corrplot) # makes pretty correlation plots in ggplot
 library(fredr)
-library(lubridate)
-library(glmnet)
-library(caret)
-library(elasticnet)
+library(lubridate) # wrangling data
+library(glmnet) # regressions
+library(caret) #regressions
+library(elasticnet) #combination of regressions
 library(reshape2)
 library(plotly)
+library(xgboost)    # used for building XGBoost model
+library(e1071)      # used for skewness
+library(cowplot)    # used for combining multiple plots 
 ```
 
 
@@ -671,6 +673,96 @@ summary(linear_scaled)
 ```
 
 These are more exciting results! Using the scaled monthly data, we have some very significant results with non-trivial estimates. Things that we think effect our inflation expectation: how the cost of a basket of goods changes nationwide, the ten year treasury note, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. As would be expected, the bonds, the unemployment rate and the number of employees are all inversely correlated. We would assume prices won't be forced up when there are still people that want work, or when the bond yields are really high. 
+
+As for the linear model itself, it is not terrific but also not as poor of a model as one might expect. Our $R^2$ values are above .65 and our RMSE is within reason. 
+
+```{r}
+
+#Step 1 - create the evaluation metrics function
+
+eval_metrics = function(model, df, predictions, target){
+    resids = df[,target] - predictions
+    resids2 = resids**2
+    N = length(predictions)
+    r2 = as.character(round(summary(model)$r.squared, 2))
+    adj_r2 = as.character(round(summary(model)$adj.r.squared, 2))
+    print(c("Adjusted R^2", adj_r2)) #Adjusted R-squared
+    print(c("RMSE", as.character(round(sqrt(sum(resids2)/N), 2)))) #RMSE
+}
+
+predictions = predict(linear_scaled, newdata = train)
+eval_metrics(linear_scaled, train, predictions, target = 'inflation_expectation')
+
+# Step 3 - predicting and evaluating the model on test data
+predictions = predict(linear_scaled, newdata = test)
+eval_metrics(linear_scaled, test, predictions, target = 'inflation_expectation')
+```
+
+$R^2$ remains the same and RMSE increases modestly on test data. Still not wonderful but better than I would naturally expect!
+
+
+```{r}
+# Regularization
+cols_reg = cols
+
+dummies <- dummyVars(inflation_expectation ~ ., data = data_monthly_dateless[,cols_reg])
+
+train_dummies = predict(dummies, newdata = train[,cols_reg])
+
+test_dummies = predict(dummies, newdata = test[,cols_reg])
+
+print(dim(train_dummies)); print(dim(test_dummies))
+```
+
+Initally, because of the extreme correlation in some, I would expect lasso to be the technique we eventually want to resort to but I figure we might as well try ridge as well. 
+
+```{r}
+
+# ridge
+
+x = as.matrix(train_dummies)
+y_train = train$inflation_expectation
+
+x_test = as.matrix(test_dummies)
+y_test = test$inflation_expectation
+
+lambdas <- 10^seq(4, -3, by = -.1)
+ridge_reg = glmnet(x, y_train, nlambda = 25, alpha = 0, lambda = lambdas)
+
+cv_ridge <- cv.glmnet(x, y_train, alpha = 0, lambda = lambdas)
+optimal_lambda <- cv_ridge$lambda.min
+optimal_lambda
+
+plot(ridge_reg)
+
+
+```
+
+Optimal lambda comes out at 0.001. I'm skeptical of this value immediately, and it may require more exploration to see if there are optimizations to improve it. 
+
+```{r}
+#lasso
+lambdas <- 10^seq(4, -3, by = -.1)
+
+# Setting alpha = 1 implements lasso regression
+lasso_reg <- cv.glmnet(x, y_train, alpha = 1, lambda = lambdas, standardize = TRUE, nfolds = 5)
+
+# Best 
+lambda_best <- lasso_reg$lambda.min 
+lambda_best
+
+lambdas <- 10^seq(2, -3, by = -.1)
+
+# Setting alpha = 1 implements lasso regression
+lasso_reg <- cv.glmnet(x, y_train, alpha = 1, lambda = lambdas, standardize = TRUE, nfolds = 5)
+
+# Best 
+lambda_best <- lasso_reg$lambda.min 
+lambda_best
+
+plot(lasso_reg)
+
+```
 
 
 
