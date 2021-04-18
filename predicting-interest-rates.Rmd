@@ -490,11 +490,10 @@ It seems much further off than I expected. Vehicle sales seem almost constant (i
 
 One of the immediate problems with the data was the somewhat random in when it was gathered. Some daily, some monthly, and some seemingly randomly. Others were done by quarter (once every three months), but of course they aren't always released on the first of the month and because we have merged the data daily, it makes it really hard to run any algorithms on. 
 
-As an example, the federal debt appears to be gathered just once a year in September, whereas other data is gathered every single day. So the data needed to be processed in such as way that we could more easily work with it. 
+As an example, the federal debt appears to be gathered just once a year in September, whereas other data is gathered every single day. So the data needed to be processed in such as way that we could more easily work with it. Our conclusive way of doing so was to create summarized data frames. So we created two data frames that were grouped by month and year, averaging the values and including NaN for all values that had no data points.  
 
-So instead, we shall create a few very clean data frames that are averages. So we created two data frames that were grouped by month and year, averaging the values and ignoring missing values. 
 
-```{r}
+```{r include=FALSE}
 
 df_monthly <- df %>%
   group_by(month = floor_date(dates, "month")) %>%
@@ -528,11 +527,9 @@ df_monthly <- df %>%
     federal_debt_percent_of_gdp = mean(federal_debt_percent_of_gdp, na.rm = TRUE)
 )
 
-
-
 ```
 
-```{r}
+```{r include=FALSE}
 df_yearly <- df %>%
   group_by(year = floor_date(dates, "year")) %>%
   summarise(
@@ -566,42 +563,54 @@ df_yearly <- df %>%
 )
 
 df_yearly_cleaned <- na.omit(df_yearly)
-
-df_yearly_cleaned
 ```
 
-In fact, to show a point of how inconcistent some of the data was, simply cleaning the data by pulling only months where all data series had at least an entry yields absolutely no months. So instead, for the monthly approach, we decided to take a different approach. Instead, we started eliminating poor data features, ones that didn't line up enough with the majority of the data we had. 
 
-# Explore
 
-```{r}
+
+As a result, we had a yearly data table that consisted of 34 years, ranging 1987 to 2021, and a monthly dataframe ranging the same years but with a more granular, 1246 monthly data points.
+
+To show a point of how inconcistent some of the data was, simply cleaning the monthly data by pulling only months where all data series had at least an entry yields absolutely no months. So instead, for the monthly approach, we decided to take a different approach. To figure that out, we graphed the number of missing values by series in the monthly data. 
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 df_monthly_modern <- df_monthly %>% 
   filter(month >= "1987-01-01")
 
 monthly_nas <- df_monthly_modern %>% 
-  summarise_all(funs(sum(is.na(.))))
+  summarise_all(funs(sum(is.na(.)))) 
 
-monthly_nas
+data_long <- gather(monthly_nas, month, consumer_price_index_urban,inflation_expectation, ten_year_treasury, ten_minus_two_treasury, ten_minus_three_months_treasury, unemployment_rate, real_gdp, eff_fed_funds_rate, gdp, thirty_year_fixed_mortgage, m_two, velocity_of_mtwo, m_one, all_employees_minus_farmers, aaa_corporate_bond_yield, personal_savings_rate, personal_consumption_expenditures, industrial_production_index, federal_debt_total, labor_force_participation_rate, consumer_price_index_nationwide, s_and_p, m_three, federal_surplus_or_deficit, house_price_index_nationwide, total_vehicle_sales, federal_debt_percent_of_gdp )
+
+
+data_nas <- data_long %>% 
+  rename(Missing_Values = consumer_price_index_urban) %>%
+  rename(dataseries = month) %>% 
+  ggplot(data = ., aes(x = dataseries, y = Missing_Values)) + 
+    geom_bar(stat = "identity") + 
+    coord_flip() + 
+    ggtitle("Number of missing months by series") 
+
+data_nas
+
 ```
 
-This yielded an interesting finding. In fact, there appear to be two types of data here. Data collected quarterly and data collected monthly (or even more granularly). Then there are exceptions like total federal debt which is collected once each year in september. So in this way, the data was split into 2 groups. 
+This yielded an interesting finding. In fact, there appear to be two types of data here. Data collected quarterly and data collected monthly (or even more granularly). Then there are exceptions like total federal debt which is collected once each year in september. Data sets needed to be segregated by their collection frequency; ones that didn't line up enough with the majority of the data we moved to their own group. This left us with monthly, weekly and daily data in one table knon as monthly, whereas the data that was collected quarterly was put into another data frame.  
 
-```{r}
+```{r include=FALSE}
 data_monthly <- df_monthly %>% 
   select(-real_gdp, -gdp, -velocity_of_mtwo, -federal_debt_total, -federal_surplus_or_deficit, -house_price_index_nationwide, -house_price_index_nationwide, -federal_debt_percent_of_gdp) %>% 
   na.omit()
   
-data_monthly
-```
 
-
-```{r}
 data_quarterly <- df_monthly %>% 
   select(-federal_debt_total, - federal_debt_percent_of_gdp, -federal_surplus_or_deficit) %>% 
   na.omit()
 
-data_quarterly
+
 ```
+
+## Initial modeling tests
 
 For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metrix calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
 
