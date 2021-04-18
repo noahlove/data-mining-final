@@ -94,7 +94,7 @@ popular_funds_series_id
 wanted_funds_series <- c("DGS10", "T10YIE", "CPIAUCSL", "GOLDAMGBD228NLBM")
 ```
 
-```{r}
+```{r Import Data, message=FALSE, warning=FALSE, include=FALSE}
 consumer_price_index_urban <- fredr(
   series_id = "CPIAUCSL"
 ) %>% 
@@ -733,7 +733,7 @@ cv_ridge <- cv.glmnet(x, y_train, alpha = 0, lambda = lambdas)
 optimal_lambda <- cv_ridge$lambda.min
 optimal_lambda
 
-plot(ridge_reg)
+plot(ridge_reg, main = "Ridge Regression")
 
 
 ```
@@ -760,10 +760,55 @@ lasso_reg <- cv.glmnet(x, y_train, alpha = 1, lambda = lambdas, standardize = TR
 lambda_best <- lasso_reg$lambda.min 
 lambda_best
 
-plot(lasso_reg)
+plot(lasso_reg, main = "Lasso Regression")
+
+
+mean(lasso_reg$lambda.1se)
 
 ```
 
+Taking a step back to look at what we are estimating. The expected values are between 0 and 6 effectively, for what will be the inflation in the immediate future. Really where our modeling might be letting us down is in the fact that the majority of the time, you can guess 2.5 to 3.5 % inflation and be right. 
+
+
+```{r}
+#elastic net
+
+histogram(data_monthly_dateless$inflation_expectation, breaks = 20)
+```
+
+
+```{r}
+cv_5 = trainControl(method = "cv", number = 5)
+
+inflation_elnet <- train(
+  inflation_expectation ~.,data = data_monthly_dateless, 
+  method = "glmnet", 
+  trControl = cv_5
+)
+
+inflation_elnet
+```
+
+```{r}
+#similar results
+
+inflation_elnet_best <- train(
+  inflation_expectation ~ . ^ 2, data = data_monthly_dateless,
+  method = "glmnet",
+  trControl = cv_5,
+  tuneLength = 10
+)
+
+get_best_result = function(caret_fit) {
+  best = which(rownames(caret_fit$results) == rownames(caret_fit$bestTune))
+  best_result = caret_fit$results[best, ]
+  rownames(best_result) = NULL
+  best_result
+}
+
+get_best_result(inflation_elnet_best)
+```
+We end up with very similar results: because alpha is at 1 so it is practicly doing the exact same algorithm as above. 
 
 
 ```{r}
