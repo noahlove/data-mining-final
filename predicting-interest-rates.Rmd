@@ -21,28 +21,6 @@ library(RColorBrewer) #PCA Viz
 library(idbr) #for population data (census)
 ```
 
-
-## Introduction
-
-Both Blinda and I had a fascination with economics data and were particularly interested in finding ways to apply the techniques we have learned in data mining to the field of economics. In many cases, "economics" as an entire field seems way too daunting to attack as a whole. However, in some sense, that seems like a perfect reason to pick it for a data mining project! We could download a massive amount of rather tangentially related data, and find patterns or facts that we find interesting. In the end, our goal was to hopefully build some sort of algorithm or model that backs up the intuition that we have created learning Economics while at Columbia. Of course much of economics comes down to really cool new techniques for finding casual inferences like difference-in-difference and regression discontinuities, but we think some really interesting conclusions should be available with other tools. 
-
-As such our audience for this paper and topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMS. 
-
-## Datasets!
-
-- FRED
-- DBnomics
-- Census
-
-
-
-
-## Wrangle the data:
-
-
-
-## Dataset
-
 ```{r API, include=FALSE}
 api_key <- "0dc8fa2f5f938907a960e5fd5c20910d"
 
@@ -53,23 +31,79 @@ idb_api_key("ff03f4c2d4f1a380a4e05b83b2515e75f900bf00")
 
 ```
 
+## Introduction
 
-First let's see what the most popular sets of data are!
+Both Blinda and I had a fascination with economics data and were particularly interested in finding ways to apply the techniques we have learned in data mining to the field of economics. In many cases, "economics" as an entire field seems way too daunting to attack as a whole. However, in some sense, that seems like a perfect reason to pick it for a data mining project! We could download a massive amount of rather tangentially related data, and find patterns or facts that we find interesting. In the end, our goal was to hopefully build some sort of algorithm or model that backs up the intuition that we have created learning Economics while at Columbia. Of course much of economics comes down to really cool new techniques for finding casual inferences like difference-in-difference and regression discontinuities, but we think some really interesting conclusions should be available with other tools. 
 
-```{r find top 5 values}
+As such our audience for this paper and topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMS. 
+
+## Datasets!
+
+Because we didn't have a particular focus to our economic exploration, we decided that we would try and gather as wide of a range of data as we could, combine them into one large dataset and then look for interesting paths to follow.
+
+This strategy led us to "FRED"; not a person but rather the Federal Reserve Bank of St. Louis which provides an incredible amount of data direct from one of the 12 U.S. federal reserve banks. As a result, this data is the most direct we can get to the Economy at a sense and is commonly used by economic researchers. Also, thanks to their API, our research project should be able to be updated simply by rerunning the markdown file to include any new data. 
+
+The beauty of using FRED data is that there is not just one dataset, but hundreds of different ones. As such, not knowing exactly what we wanted, we found we could actually use the api function in order to find the most popular datasets by calls! This allowed us to rely on the experience of other researchers to see what data was popular and what we should be looking at. 
+
+Here is an example api to FRED searching through the series and asking for the 5 most popular data series. 
+
+```{r}
 popular_funds_series <- fredr_series_search_text(
     search_text = "federal funds",
     order_by = "popularity",
     sort_order = "desc",
     limit = 5
 )
+```
 
+
+```{r find top 5 values, include=FALSE}
 popular_funds_series_id <- popular_funds_series$id
 
 popular_funds_series_id
-
-wanted_funds_series <- c("DGS10", "T10YIE", "CPIAUCSL", "GOLDAMGBD228NLBM")
 ```
+
+As a result, we ended up calling 27 different datasets and combining them together. These datasets range widely in what they describe and wildly on their date ranges. As examples, the datasets describe everything from a consumer price index, estimating the average price of goods nationwide, to the number of vehicle sales. Larger macroeconomics data was pulled as well including gross domestic product (GDP), unemployment rate, or even the prices of bonds. In summary, we have from prior knowledge classified the data into five categories: 
+
+1. Asset price: 
+- intent and finding 
+- house_price_index_nationwide
+- s_and_p
+- total_vehicle_sales
+
+
+2. Debt supply and demand: 
+- federal_debt_percent_of_gdp
+- federal_surplus_or_deficit
+
+3. economic expectation/confidence:
+- consumer_price_index_nationwide
+- consumer_price_index_urban
+- personal_savings_rate
+- personal_consumption_expenditures
+- gdp
+- real_gdp
+- real_gdp_per_capita
+- all_employees_minus_farm
+- unemployment_rate
+- industrial_production_index
+- labor_force_participation_rate
+- inflation_expectation
+
+4. secondary market 
+- ten_minus_three_months_treasury
+- ten_year_treasury
+- aaa_corporate_bond_yield
+- ten_minus_two_treasury
+- thirty_year_fixed_mortgage
+
+5. Federal Reserve (Fed decided)
+- m_one
+- m_two
+- m_three
+- velocity_of_mtwo
+- eff_fed_funds_rate
+
 
 ```{r Import Data, message=FALSE, warning=FALSE, include=FALSE}
 consumer_price_index_urban <- fredr(
@@ -803,8 +837,10 @@ obs_x$date <- NULL
 obs_x <- sapply(obs_x, diff)
 
 pr_out <- prcomp(obs_x, center=TRUE, scale=TRUE)
-
 ```
+
+
+
 
 ```{r}
 plot(cumsum(pr_out$sdev^2)/ sum(pr_out$sdev^2))
@@ -903,6 +939,8 @@ ggplot(data = population, mapping = aes(x = year, y = population)) +
 ```
 
 Out of caution, this will only be applied to the yearly data as this is the most granular level we have. In the future, you could linearly estimate the data assuming an equal distribution of birthdays throughout the year and that should be close. 
+
+
 ```{r}
 population$year <- as.Date(ISOdate(population$year, 1, 1))
 
@@ -935,8 +973,6 @@ Saved time? Decreased uncertainty? What did we find?
 
 
 Checklist
-[] algorithm to explore the relationship between different features in the data
-- graphical summary
 - quantitative evaluation
 - engineer a feature
 
