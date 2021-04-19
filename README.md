@@ -1,10 +1,4 @@
----
-output:
-  html_document: default
-  word_document: default
-  pdf_document: default
----
-# data-mining-final
+# Data Mining Final
 Author: Noah Love, Blinda Tian
 
 ### Project summary
