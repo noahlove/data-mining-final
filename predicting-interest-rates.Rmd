@@ -1,5 +1,5 @@
 ---
-title: "Predicting Interest Rates"
+title: "Predicting Inflation Expectation"
 author: "Noah Love and Blinda Tian"
 date: "4/18/2021"
 output: html_document
@@ -45,7 +45,7 @@ idb_api_key("ff03f4c2d4f1a380a4e05b83b2515e75f900bf00")
 
 Both Blinda and I had a fascination with economics data and were particularly interested in finding ways to apply the techniques we have learned in data mining to the field of economics. In many cases, "economics" as an entire field seems way too daunting to attack as a whole. However, in some sense, that seems like a perfect reason to pick it for a data mining project! We could download a massive amount of rather tangentially related data, and find patterns or facts that we find interesting. In the end, our goal was to hopefully build some sort of algorithm or model that backs up the intuition that we have created learning Economics while at Columbia. Of course much of economics comes down to really cool new techniques for finding casual inferences like difference-in-difference and regression discontinuities, but we think some really interesting conclusions should be available with other tools.
 
-As such our audience for this paper and topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMS.
+As such our audience for this paper can be anyone who are interested in inflation forecast and care about thier future life cost. Topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMS.
 
 ## Datasets!
 
@@ -417,7 +417,7 @@ dim(df)
 
 ## Data wrangling
 
-Because the data comes from the same source, we assumed that they would merge together nicely; however, this was not the case. The primary problem was when the data was collected. and for most datasets this was different. In general, data was collected either: daily, weekly, monthly, quarterly or yearly. However, this means that not every dataframe had the same dates to merge on, so the final data frame had a large amount of NAs.
+Because the data comes from the same source, we assumed that they would merge together nicely; however, this was not the case. The primary problem was when the data was collected, and for most datasets the date was different. In general, data was collected either: daily, weekly, monthly, quarterly or yearly. However, this means that not every dataframe had the same dates to merge on, so the final data frame had a large amount of NAs.
 
 Additionally, not all data was collected starting in the same timeframe. For example, federal debt has existed for longer than the inception of some of the other metrics. As a result, some debt data goes all the way back to January of 1901 (through the API at least), whereas other datasets start as recently as 1987.
 
@@ -439,7 +439,7 @@ map_dfr(c("FYFSD", "GDPC1"), fredr) %>%
 
 No matter what we graphed against the US deficit, everything else appeared to be flat. In reality, this just goes to show the shear size of the deficit the United States is running. In fact, 3 trillion next to almost any other number in our data set is massive. This may be important to remember later, and make sure this dataset isn't having undue influence on our models.
 
-When everything else is compared to each other, they seem more more reasonable. For example, this shows the unemployment rate (UNRATE) and the federal funds rate (FEDFUNDS).
+When everything else is compared to each other, they seem more more reasonable. For example, this shows the unemployment rate (UNRATE) and the federal funds rate (FEDFUNDS) with a similar negatively related pattern and within a reasonable range.
 
 ```{r echo=FALSE}
 map_dfr(c("UNRATE", "FEDFUNDS"), fredr) %>%
@@ -449,13 +449,13 @@ map_dfr(c("UNRATE", "FEDFUNDS"), fredr) %>%
   labs(x = "Observation Date", y = "Rate", color = "Series")
 ```
 
-Data like this actually appears really interesting and is telling the closer you look at it. At first, it may appear just like noise when in fact there really is a relationship at play. The federal funds rate appears to spike, immediately followed by the unemployment rate. In a sense, the unemployment rate is trailing the federal funds rate.
+Data like this actually appears really interesting and is telling the closer you look at it. At first, it may appear just like noise when in fact there really is a relationship at play. The federal funds rate appears to spike, immediately followed by the unemployment rate. In a sense, the unemployment rate is trailing the federal funds rate. 
 
-In reality, its not quite as simple. More often when economic times are good, the federal funds rate is raising, so that it can be lowered when the unemployment rate rises. It is a tool for economists to try and help the economy. And after a while, another recession uccurs which forces the rate back down to drive inflation.
+In reality, its not quite as simple. More often when economic times are good, the federal funds rate is raising, so that it can be lowered when the unemployment rate rises. It is a tool for economists to try and help the economy. And after a while, another recession uccurs which forces the rate back down to drive inflation because controlling both unemployment rate and inflation are Fed's two mandates. 
 
 In terms of data manipulation, this graph could be slightly difficult for something like regression to parse. In a sense, the data is incredibly time dependent being time series data and as a result, may not fit well in basic regression especially.
 
-Other graphs showed other very intertwined relationships. For example, there is not much closer than comparing GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value.
+Other graphs showed other very intertwined relationships. For example, there is not much closer than comparing GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value. It was interesting to see that after 2012, the GDP deflator (GDP/GDPC1) changed to positive and the gap between GDP and real GDP gradually increase sicne then, showing that the level of prices has gradually increase with respect to its base year.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 map_dfr(c("GDP", "GDPC1"), fredr) %>%
@@ -639,9 +639,10 @@ data_quarterly <- df_monthly %>%
 
 ## Initial modeling tests
 
-For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metric calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans.
+For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metric calculated by Michigan State which says what do American consumers expect the price of goods and services to change during the next 12 months. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
 
-This is exciting because it acts as a proxy for how people feel about the economy, which we find to be a much more interesting question than what will bond prices be next year. In a sense, it allows us to analyze how humans feel about the economy: anxious or encouraged.
+This is exciting because it acts as a proxy for how people feel about the economy, which we find to be a much more interesting question than what will bond prices be next year. And since the start of 2021, more and more people pay attention to the potential rise in inflation after Fed's unprecedented stimulus package initiated. 
+In a sense, the inflation expectation allows us to analyze how humans feel about the economy: anxious or encouraged by looking at the economic indicators.
 
 ```{r echo=FALSE}
 linear_model_yearly <- lm(data = df_yearly_cleaned, inflation_expectation ~ .)
@@ -734,7 +735,10 @@ linear_scaled <- lm(inflation_expectation ~ . , data = train)
 summary(linear_scaled)
 ```
 
-These are more exciting results! Using the scaled monthly data, we have some very significant results with non-trivial estimates. Things that we think effect our inflation expectation: how the cost of a basket of goods changes nationwide, the ten year treasury note, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. As would be expected, the bonds, the unemployment rate and the number of employees are all inversely correlated. We would assume prices won't be forced up when there are still people that want work, or when the bond yields are really high.
+These are more exciting results! Using the scaled monthly data, we have some very significant results with non-trivial estimates. Things that we think effect our inflation expectation: how the cost of a basket of goods changes nationwide, the ten year treasury note, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. As would be expected, the treasury bonds, the unemployment rate and the number of employees are all inversely correlated. According to economic theory, Inflation and unemployment have maintained an inverse relationship as represented by the Phillips curve. We would assume prices won't be forced up when there are still people that want work and When unemployment is low, more consumers have discretionary income to purchase goods. When the bond yields are really high, meaning bonds are less desirable, and that signals less purchasing power in the market. 
+
+
+
 
 As for the linear model itself, it is not terrific but also not as poor of a model as one might expect. Our $R^2$ values are above .65 and our RMSE is within reason.
 
@@ -743,7 +747,6 @@ Running on train data:
 ```{r echo=FALSE}
 
 #Step 1 - create the evaluation metrics function
-
 
 eval_metrics = function(model, df, predictions, target) {
   resids = df[, target] - predictions
@@ -763,7 +766,6 @@ eval_metrics(linear_scaled, train, predictions, target = 'inflation_expectation'
 ```
 
 Rerunning on test data:
-
 ```{r echo=FALSE}
 # Step 3 - predicting and evaluating the model on test data
 predictions = predict(linear_scaled, newdata = test)
@@ -808,7 +810,6 @@ optimal_lambda <- cv_ridge$lambda.min
 optimal_lambda
 
 plot(ridge_reg, main = "Ridge Regression")
-
 
 ```
 
@@ -899,7 +900,7 @@ get_best_result = function(caret_fit) {
 get_best_result(inflation_elnet_best)
 ```
 
-We end up with very similar results: because alpha is at 1 so it is practicly doing the exact same algorithm as above.
+We end up with very similar results: because alpha is at 1 so it is practicly doing the exact same algorithm as above. There is few difference between working on normal OLS regression objective and lasso/ridge. 
 
 ## Principal Component Analysis
 
@@ -950,6 +951,9 @@ km_out <- kmeans(data_monthly_dateless, centers = 3)
 #table(km_out$cluster)
 
 #km_out$cluster
+plot(data_monthly$month,km_out$cluster)
+
+
 ```
 
 Even after scaling the data, chronological groups were all that klustering could pull out.
@@ -1058,14 +1062,12 @@ km_out <- kmeans(scaled_percap, centers = 3)
 
 However, even scaled for population, clustering fails to recognize anything other than time, and the simplified per-capita regression provided no additional information compared to the full model.
 
+### Data dredging
+We have gone through the following process to avoid the failure to acknowledge that the correlation was in fact the result of chance. We are confident that the comparison among different models is a valid metric to prevent data dredging. The analysis was conducted in k-fold cross-validations to assessing the model performance. Then, with testing error higher than the training error that probably indicates overfitting, we introduced variable regularization (Lasso & Ridge) to the model and intend to reduce the number of free parameters. However, the result turns out to be the optimal lambda close to zero, and thus Lasso & Ridge produce the close to classical least square coefficients. 
+
+While there are some limitations in our dataset. For example, the missing factors and unmeasured confounders may generate bias in predicting inflation expectation. The variables that we imported are constructed on some empirically motivating characteristic of the economy and those numbers are captured by experts or big data. But inflation expectation, even at an aggregate level, is measured by the survey to evaluate consumer sentiment. However, the consumer's learning process and the role of trust in the economic variables are not considered in the model. 
+
+
 ## Conclusion
+In summary, this whole project started by mining economic variables from the FRED database. Then, through cleaning, identifying, and learning more about the data, we attempted to discover and analyze patterns that are related to inflation expectation. Later, we tried to use a different combination of predictors and models, including OLS, scaling, Lasso, Ridge, clustering, and adding population feature, then evaluate their feasibility respectively. Eventually, we believe that the OLS model on scaled monthly data generates with more accuracy and interpretability. Our regression model suggests that that inflation expectation has a stronger relationship in current inflation, ten-year treasury bond, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. Within those key variables, the treasury bonds, the unemployment rate, and the number of employees are negatively correlated. And this relation also aligns with economic theory and market intuition. How human think about the future inflation comes from their current feeling in price of good and overall longterm cost of financing and living. Both mortgage rates and ten year tresury yield implies the long-term cost of financing, with lower rates imply a lower cost of living, thus the higher purchasing power in the future. And with low levels of unemployment, more consumers have discretionary income to purchase goods and thus the prices of good rise.
 
-### Data dredging and p hacking
-
-### Value
-
-Saved time? Decreased uncertainty? What did we find?
-
-[] Veryify results - How robust is this? - Uncertainty? How does this affect the conclusions
-
-[] github readme
