@@ -906,7 +906,7 @@ We end up with very similar results: because alpha is at 1 so it is practicly do
 
 ## Principal Component Analysis
 
-```{r}
+```{r echo=FALSE}
 obs_x <- na.omit(data_monthly) %>%
   rename(date = month)
 
@@ -948,7 +948,7 @@ km_out <- kmeans(data_monthly_dateless, centers = 3)
 At first the distrubtion of groups actually looked decent. Using three phases, growth, recession and a sort of stagnation, we were hoping to capture the phases. However, running it on the original datasets led to three, completely chronological groups. Factors like debt, gdp and deficit likely were too much for the klustering to overcome. 
 
 
-```{r}
+```{r echo=FALSE}
 data_monthly_scaled <- scale(data_monthly_dateless, scale = TRUE)
 
 km_out <- kmeans(data_monthly_dateless, centers = 3)
@@ -967,8 +967,7 @@ Here we introduce population data from the census in order to hopefully look at 
 
 One reason why klustering might not be working so well is the effects that population growth is having on the country. There is undoubtably differences between the last few decades and klustering is pulling that out through the numbers. 
 
-
-```{r}
+```{r echo=FALSE}
 lex <- get_idb(
   country = "all",
   year = 2021,
@@ -984,7 +983,7 @@ ggplot(lex, aes(fill = e0)) +
   labs(fill = "Life expectancy \nat birth (2021)")
 ```
 
-```{r}
+```{r echo=FALSE}
 population <- get_idb(
   country = "USA",
   year = 1978:2021,
@@ -1010,11 +1009,8 @@ The reason to create this type of feature is actually a much more helpful way of
 From our initial regression, we know that m2 money was important. However, this could be inappropriate because there should be more money with a lot more people so this is helpful to make sure that truly is significant. 
 
 
-```{r}
+```{r echo=FALSE}
 population$year <- as.Date(ISOdate(population$year, 1, 1))
-
-
-colnames(df_yearly_cleaned)
 
 data_per_capita <- merge(df_yearly_cleaned, population) %>%
   mutate(car_sales_percap = total_vehicle_sales / population) %>%
@@ -1072,31 +1068,20 @@ However, even scaled for population, clustering fails to recognize anything othe
 
 
 
+
 ## Conclusion
+
+### Data dredging and p hacking
+
 
 ### Value
 
 Saved time? Decreased uncertainty? What did we find?
 
 
-
-
-
-
-
-
-
-
-Checklist
-- quantitative evaluation
-- engineer a feature
-
 [] Veryify results
-- subset?
 - How robust is this?
 - Uncertainty? How does this affect the conclusions
-
-[] Discussion of data dredging/snooping
 
 [] github readme
 
