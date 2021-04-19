@@ -613,12 +613,12 @@ data_quarterly <- df_monthly %>%
 
 For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metrix calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
 
+This is exciting because it acts as a proxy for how people feel about the economy, which we find to be a much more interesting question than what will bond prices be next year. In a sense, it allows us to analyze how humans feel about the economy: anxious or encouraged. 
+
 ```{r echo=FALSE}
 linear_model_yearly <- lm(data = df_yearly_cleaned, inflation_expectation ~ .)
 
 summary(linear_model_yearly)
-
-
 ```
 
 Unsurprisingly, there is not a ton of significance throughout, and there is likely high colinearity between many of these. However, it is interesting to look at what was pulled through so far. Of the features that had a significance code, total vehicle sales and M2 money supply seem to be the most impactful. M2 money is a count of all money including cash and checking deposits (M1) as well as money saved in savings accounts, money market securities, mutual funds and other time deposits. In a sense, it is a good gauge of how much physical money Americans have that they are able to spend. 
