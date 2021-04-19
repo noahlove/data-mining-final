@@ -1,4 +1,7 @@
 # Predicting Interest Rates
+
+[The Github Repo](https://github.com/noahlove/data-mining-final "The Github Repo")
+
 ```{r Packages, message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse) # used for everything
 library(data.table) # helpful with big table manipulations
@@ -35,19 +38,19 @@ idb_api_key("ff03f4c2d4f1a380a4e05b83b2515e75f900bf00")
 
 ## Introduction
 
-Both Blinda and I had a fascination with economics data and were particularly interested in finding ways to apply the techniques we have learned in data mining to the field of economics. In many cases, "economics" as an entire field seems way too daunting to attack as a whole. However, in some sense, that seems like a perfect reason to pick it for a data mining project! We could download a massive amount of rather tangentially related data, and find patterns or facts that we find interesting. In the end, our goal was to hopefully build some sort of algorithm or model that backs up the intuition that we have created learning Economics while at Columbia. Of course much of economics comes down to really cool new techniques for finding casual inferences like difference-in-difference and regression discontinuities, but we think some really interesting conclusions should be available with other tools. 
+Both Blinda and I had a fascination with economics data and were particularly interested in finding ways to apply the techniques we have learned in data mining to the field of economics. In many cases, "economics" as an entire field seems way too daunting to attack as a whole. However, in some sense, that seems like a perfect reason to pick it for a data mining project! We could download a massive amount of rather tangentially related data, and find patterns or facts that we find interesting. In the end, our goal was to hopefully build some sort of algorithm or model that backs up the intuition that we have created learning Economics while at Columbia. Of course much of economics comes down to really cool new techniques for finding casual inferences like difference-in-difference and regression discontinuities, but we think some really interesting conclusions should be available with other tools.
 
-As such our audience for this paper and topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMS. 
+As such our audience for this paper and topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMS.
 
 ## Datasets!
 
 Because we didn't have a particular focus to our economic exploration, we decided that we would try and gather as wide of a range of data as we could, combine them into one large dataset and then look for interesting paths to follow.
 
-This strategy led us to "FRED"; not a person but rather the Federal Reserve Bank of St. Louis which provides an incredible amount of data direct from one of the 12 U.S. federal reserve banks. As a result, this data is the most direct we can get to the Economy at a sense and is commonly used by economic researchers. Also, thanks to their API, our research project should be able to be updated simply by rerunning the markdown file to include any new data. 
+This strategy led us to "FRED"; not a person but rather the Federal Reserve Bank of St. Louis which provides an incredible amount of data direct from one of the 12 U.S. federal reserve banks. As a result, this data is the most direct we can get to the Economy at a sense and is commonly used by economic researchers. Also, thanks to their API, our research project should be able to be updated simply by rerunning the markdown file to include any new data.
 
-The beauty of using FRED data is that there is not just one dataset, but hundreds of different ones. As such, not knowing exactly what we wanted, we found we could actually use the api function in order to find the most popular datasets by calls! This allowed us to rely on the experience of other researchers to see what data was popular and what we should be looking at. 
+The beauty of using FRED data is that there is not just one dataset, but hundreds of different ones. As such, not knowing exactly what we wanted, we found we could actually use the api function in order to find the most popular datasets by calls! This allowed us to rely on the experience of other researchers to see what data was popular and what we should be looking at.
 
-Here is an example api to FRED searching through the series and asking for the 5 most popular data series. 
+Here is an example api to FRED searching through the series and asking for the 5 most popular data series.
 
 ```{r}
 popular_funds_series <- fredr_series_search_text(
@@ -58,54 +61,56 @@ popular_funds_series <- fredr_series_search_text(
 )
 ```
 
-
 ```{r find top 5 values, include=FALSE}
 popular_funds_series_id <- popular_funds_series$id
 
 popular_funds_series_id
 ```
 
-As a result, we ended up calling 27 different datasets and combining them together. These datasets range widely in what they describe and wildly on their date ranges. As examples, the datasets describe everything from a consumer price index, estimating the average price of goods nationwide, to the number of vehicle sales. Larger macroeconomics data was pulled as well including gross domestic product (GDP), unemployment rate, or even the prices of bonds. In summary, we have from prior knowledge classified the data into five categories: 
+As a result, we ended up calling 27 different datasets and combining them together. These datasets range widely in what they describe and wildly on their date ranges. As examples, the datasets describe everything from a consumer price index, estimating the average price of goods nationwide, to the number of vehicle sales. Larger macroeconomics data was pulled as well including gross domestic product (GDP), unemployment rate, or even the prices of bonds. In summary, we have from prior knowledge classified the data into five categories:
 
-1. Asset price: 
-- intent and finding 
-- house_price_index_nationwide
-- s_and_p
-- total_vehicle_sales
+1.  Asset price:
 
+-   intent and finding
+-   house_price_index_nationwide
+-   s_and_p
+-   total_vehicle_sales
 
-2. Debt supply and demand: 
-- federal_debt_percent_of_gdp
-- federal_surplus_or_deficit
+2.  Debt supply and demand:
 
-3. economic expectation/confidence:
-- consumer_price_index_nationwide
-- consumer_price_index_urban
-- personal_savings_rate
-- personal_consumption_expenditures
-- gdp
-- real_gdp
-- real_gdp_per_capita
-- all_employees_minus_farm
-- unemployment_rate
-- industrial_production_index
-- labor_force_participation_rate
-- inflation_expectation
+-   federal_debt_percent_of_gdp
+-   federal_surplus_or_deficit
 
-4. secondary market 
-- ten_minus_three_months_treasury
-- ten_year_treasury
-- aaa_corporate_bond_yield
-- ten_minus_two_treasury
-- thirty_year_fixed_mortgage
+3.  economic expectation/confidence:
 
-5. Federal Reserve (Fed decided)
-- m_one
-- m_two
-- m_three
-- velocity_of_mtwo
-- eff_fed_funds_rate
+-   consumer_price_index_nationwide
+-   consumer_price_index_urban
+-   personal_savings_rate
+-   personal_consumption_expenditures
+-   gdp
+-   real_gdp
+-   real_gdp_per_capita
+-   all_employees_minus_farm
+-   unemployment_rate
+-   industrial_production_index
+-   labor_force_participation_rate
+-   inflation_expectation
 
+4.  secondary market
+
+-   ten_minus_three_months_treasury
+-   ten_year_treasury
+-   aaa_corporate_bond_yield
+-   ten_minus_two_treasury
+-   thirty_year_fixed_mortgage
+
+5.  Federal Reserve (Fed decided)
+
+-   m_one
+-   m_two
+-   m_three
+-   velocity_of_mtwo
+-   eff_fed_funds_rate
 
 ```{r Import Data, message=FALSE, warning=FALSE, include=FALSE, cache = TRUE}
 consumer_price_index_urban <- fredr(series_id = "CPIAUCSL") %>%
@@ -396,7 +401,6 @@ df <-
 
 ```
 
-
 ```{r include=FALSE}
 df$dates <- as.Date(df$dates) 
 
@@ -406,20 +410,19 @@ dim(df)
 
 ```
 
-## Data wrangling 
+## Data wrangling
 
-Because the data comes from the same source, we assumed that they would merge together nicely; however, this was not the case. The primary problem was when the data was collected. and for most datasets this was different. In general, data was collected either: daily, weekly, monthly, quarterly or yearly. However, this means that not every dataframe had the same dates to merge on, so the final data frame had a large amount of NAs. 
+Because the data comes from the same source, we assumed that they would merge together nicely; however, this was not the case. The primary problem was when the data was collected. and for most datasets this was different. In general, data was collected either: daily, weekly, monthly, quarterly or yearly. However, this means that not every dataframe had the same dates to merge on, so the final data frame had a large amount of NAs.
 
 Additionally, not all data was collected starting in the same timeframe. For example, federal debt has existed for longer than the inception of some of the other metrics. As a result, some debt data goes all the way back to January of 1901 (through the API at least), whereas other datasets start as recently as 1987.
 
-However in the end, through the use of `merge `, we were able to build one complete dataset out of 27 different sources and with more than 16,000 rows.
-
+However in the end, through the use of `merge`, we were able to build one complete dataset out of 27 different sources and with more than 16,000 rows.
 
 ## Data Exploration
 
 The data as a whole is a beautiful combination of the most downloaded data sources and a variety of different gauges of the market and the United States as a whole.
 
-We initially began by graphing a variety of sources to see how they compare. At first, I thought something was wrong with our data. Below is a graph of Federal Surplus or Deficit (FYFSD) and the US real gross domestic product (GDPC1). 
+We initially began by graphing a variety of sources to see how they compare. At first, I thought something was wrong with our data. Below is a graph of Federal Surplus or Deficit (FYFSD) and the US real gross domestic product (GDPC1).
 
 ```{r echo=FALSE}
 map_dfr(c("FYFSD", "GDPC1"), fredr) %>%
@@ -429,9 +432,9 @@ map_dfr(c("FYFSD", "GDPC1"), fredr) %>%
   labs(x = "Observation Date", y = "Rate", color = "Series")
 ```
 
-No matter what we graphed against the US deficit, everything else appeared to be flat. In reality, this just goes to show the shear size of the deficit the United States is running. In fact, 3 trillion next to almost any other number in our data set is massive. This may be important to remember later, and make sure this dataset isn't having undue influence on our models. 
+No matter what we graphed against the US deficit, everything else appeared to be flat. In reality, this just goes to show the shear size of the deficit the United States is running. In fact, 3 trillion next to almost any other number in our data set is massive. This may be important to remember later, and make sure this dataset isn't having undue influence on our models.
 
-When everything else is compared to each other, they seem more more reasonable. For example, this shows the unemployment rate (UNRATE) and the federal funds rate (FEDFUNDS). 
+When everything else is compared to each other, they seem more more reasonable. For example, this shows the unemployment rate (UNRATE) and the federal funds rate (FEDFUNDS).
 
 ```{r echo=FALSE}
 map_dfr(c("UNRATE", "FEDFUNDS"), fredr) %>%
@@ -441,13 +444,13 @@ map_dfr(c("UNRATE", "FEDFUNDS"), fredr) %>%
   labs(x = "Observation Date", y = "Rate", color = "Series")
 ```
 
-Data like this actually appears really interesting and is telling the closer you look at it. At first, it may appear just like noise when in fact there really is a relationship at play. The federal funds rate appears to spike, immediately followed by the unemployment rate. In a sense, the unemployment rate is trailing the federal funds rate. 
+Data like this actually appears really interesting and is telling the closer you look at it. At first, it may appear just like noise when in fact there really is a relationship at play. The federal funds rate appears to spike, immediately followed by the unemployment rate. In a sense, the unemployment rate is trailing the federal funds rate.
 
-In reality, its not quite as simple. More often when economic times are good, the federal funds rate is raising, so that it can be lowered when the unemployment rate rises. It is a tool for economists to try and help the economy. And after a while, another recession uccurs which forces the rate back down to drive inflation. 
+In reality, its not quite as simple. More often when economic times are good, the federal funds rate is raising, so that it can be lowered when the unemployment rate rises. It is a tool for economists to try and help the economy. And after a while, another recession uccurs which forces the rate back down to drive inflation.
 
-In terms of data manipulation, this graph could be slightly difficult for something like regression to parse. In a sense, the data is incredibly time dependent being time series data and as a result, may not fit well in basic regression especially. 
+In terms of data manipulation, this graph could be slightly difficult for something like regression to parse. In a sense, the data is incredibly time dependent being time series data and as a result, may not fit well in basic regression especially.
 
-Other graphs showed other very intertwined relationships. For example, there is not much closer than comparing GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value. 
+Other graphs showed other very intertwined relationships. For example, there is not much closer than comparing GDP to GDPC1, or Real GDP. Real GDP is inflation adjusted GDP, meaning it shows the production output when we account for money slowly losing value.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 map_dfr(c("GDP", "GDPC1"), fredr) %>%
@@ -457,7 +460,7 @@ map_dfr(c("GDP", "GDPC1"), fredr) %>%
   labs(x = "Observation Date", y = "Rate", color = "Series")
 ```
 
-Some of the results are interesting to see if they match our intuition. For example, personal savings rate and vehicle sales! 
+Some of the results are interesting to see if they match our intuition. For example, personal savings rate and vehicle sales!
 
 ```{r echo=FALSE}
 map_dfr(c("TOTALSA", "PSAVERT"), fredr) %>%
@@ -469,13 +472,11 @@ map_dfr(c("TOTALSA", "PSAVERT"), fredr) %>%
 
 It seems much further off than I expected. Vehicle sales seem almost constant (in teal) with the exception of recessions, before immediately coming back. Personal savings however have seen a steady decrease regardless, although the stimulus appears to have had an amazing effect!
 
-
 ## More problems with dates !
 
-One of the immediate problems with the data was the somewhat random in when it was gathered. Some daily, some monthly, and some seemingly randomly. Others were done by quarter (once every three months), but of course they aren't always released on the first of the month and because we have merged the data daily, it makes it really hard to run any algorithms on. 
+One of the immediate problems with the data was the somewhat random in when it was gathered. Some daily, some monthly, and some seemingly randomly. Others were done by quarter (once every three months), but of course they aren't always released on the first of the month and because we have merged the data daily, it makes it really hard to run any algorithms on.
 
-As an example, the federal debt appears to be gathered just once a year in September, whereas other data is gathered every single day. So the data needed to be processed in such as way that we could more easily work with it. Our conclusive way of doing so was to create summarized data frames. So we created two data frames that were grouped by month and year, averaging the values and including NaN for all values that had no data points.  
-
+As an example, the federal debt appears to be gathered just once a year in September, whereas other data is gathered every single day. So the data needed to be processed in such as way that we could more easily work with it. Our conclusive way of doing so was to create summarized data frames. So we created two data frames that were grouped by month and year, averaging the values and including NaN for all values that had no data points.
 
 ```{r include=FALSE}
 
@@ -549,13 +550,9 @@ df_yearly <- df %>%
 df_yearly_cleaned <- na.omit(df_yearly)
 ```
 
-
-
-
 As a result, we had a yearly data table that consisted of 34 years, ranging 1987 to 2021, and a monthly dataframe ranging the same years but with a more granular, 1246 monthly data points.
 
-To show a point of how inconcistent some of the data was, simply cleaning the monthly data by pulling only months where all data series had at least an entry yields absolutely no months. So instead, for the monthly approach, we decided to take a different approach. To figure that out, we graphed the number of missing values by series in the monthly data. 
-
+To show a point of how inconcistent some of the data was, simply cleaning the monthly data by pulling only months where all data series had at least an entry yields absolutely no months. So instead, for the monthly approach, we decided to take a different approach. To figure that out, we graphed the number of missing values by series in the monthly data.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 df_monthly_modern <- df_monthly %>%
@@ -610,7 +607,7 @@ data_nas
 
 ```
 
-This yielded an interesting finding. In fact, there appear to be two types of data here. Data collected quarterly and data collected monthly (or even more granularly). Then there are exceptions like total federal debt which is collected once each year in september. Data sets needed to be segregated by their collection frequency; ones that didn't line up enough with the majority of the data we moved to their own group. This left us with monthly, weekly and daily data in one table knon as monthly, whereas the data that was collected quarterly was put into another data frame.  
+This yielded an interesting finding. In fact, there appear to be two types of data here. Data collected quarterly and data collected monthly (or even more granularly). Then there are exceptions like total federal debt which is collected once each year in september. Data sets needed to be segregated by their collection frequency; ones that didn't line up enough with the majority of the data we moved to their own group. This left us with monthly, weekly and daily data in one table knon as monthly, whereas the data that was collected quarterly was put into another data frame.
 
 ```{r include=FALSE}
 data_monthly <- df_monthly %>%
@@ -637,9 +634,9 @@ data_quarterly <- df_monthly %>%
 
 ## Initial modeling tests
 
-For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metric calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
+For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metric calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans.
 
-This is exciting because it acts as a proxy for how people feel about the economy, which we find to be a much more interesting question than what will bond prices be next year. In a sense, it allows us to analyze how humans feel about the economy: anxious or encouraged. 
+This is exciting because it acts as a proxy for how people feel about the economy, which we find to be a much more interesting question than what will bond prices be next year. In a sense, it allows us to analyze how humans feel about the economy: anxious or encouraged.
 
 ```{r echo=FALSE}
 linear_model_yearly <- lm(data = df_yearly_cleaned, inflation_expectation ~ .)
@@ -647,7 +644,7 @@ linear_model_yearly <- lm(data = df_yearly_cleaned, inflation_expectation ~ .)
 summary(linear_model_yearly)
 ```
 
-Unsurprisingly, there is not a ton of significance throughout, and there is likely high colinearity between many of these. However, it is interesting to look at what was pulled through so far. Of the features that had a significance code, total vehicle sales and M2 money supply seem to be the most impactful. M2 money is a count of all money including cash and checking deposits (M1) as well as money saved in savings accounts, money market securities, mutual funds and other time deposits. In a sense, it is a good gauge of how much physical money Americans have that they are able to spend. 
+Unsurprisingly, there is not a ton of significance throughout, and there is likely high colinearity between many of these. However, it is interesting to look at what was pulled through so far. Of the features that had a significance code, total vehicle sales and M2 money supply seem to be the most impactful. M2 money is a count of all money including cash and checking deposits (M1) as well as money saved in savings accounts, money market securities, mutual funds and other time deposits. In a sense, it is a good gauge of how much physical money Americans have that they are able to spend.
 
 However, there are quite a few shortcomings to this initial approach. Noramlization might be helpful, and much of the data is highly correlated. For example, high correlation can very easily be identified by graphing:
 
@@ -672,10 +669,9 @@ ggplotly(gz, tooltip = "text")
 
 ```
 
+From an even very brief glance, we can see quite a few of our features of very correlated. In a sense, this should be expected in a finance market with everything working together. For example, the Effective federal funds rate is designed to regulate many of the other features we have in our dataset, so it seems reasonable they are correlated. Also, some features are derivatives of others such as federal deficit and federal debt.
 
-From an even very brief glance, we can see quite a few of our features of very correlated. In a sense, this should be expected in a finance market with everything working together. For example, the Effective federal funds rate is designed to regulate many of the other features we have in our dataset, so it seems reasonable they are correlated. Also, some features are derivatives of others such as federal deficit and federal debt. 
-
-In fact, there are 7 features that have a correlation of over .99 with at lest one other feature. 
+In fact, there are 7 features that have a correlation of over .99 with at lest one other feature.
 
 ```{r echo=FALSE}
 findCorrelation(
@@ -686,7 +682,7 @@ findCorrelation(
 )
 ```
 
-We can get a partial view of some of these strong relationships through a further graph exploration of a subset of the data. 
+We can get a partial view of some of these strong relationships through a further graph exploration of a subset of the data.
 
 ```{r echo=FALSE}
 
@@ -694,15 +690,15 @@ ggcorrplot(correlation_df[10:21, 10:21], hc.order = TRUE, type = "lower")
 
 ```
 
-
-Of course, now the immediate next step is likely to try Ridge, Lasso and Elasticnet. These should "fix", at least to some extent the problem of multicolinearity. 
+Of course, now the immediate next step is likely to try Ridge, Lasso and Elasticnet. These should "fix", at least to some extent the problem of multicolinearity.
 
 ## Working with monthly data
-To get a more granular approach which is more appropriate, the other techniques will be tried on the monthly data instead of the yearly. 
+
+To get a more granular approach which is more appropriate, the other techniques will be tried on the monthly data instead of the yearly.
 
 ### Train and Test
 
-The data will be split into train and test datasets. The model will be trained on the train data and evaluated on the test data. This helps us gauge our robustness and see if we are at risk of overfitting. An inherent problem when dealing with financial data is the ability to say that your model is predictive of the future. It is commonplace for any stock or financial advisor to say that past results are not indicative of future porformance. As a result, just because there was a relationship between variables that we can see, doesn't mean that will remain true. This is increasingly true if there is a new type of "shock" to the economy, like a global pandemic. 
+The data will be split into train and test datasets. The model will be trained on the train data and evaluated on the test data. This helps us gauge our robustness and see if we are at risk of overfitting. An inherent problem when dealing with financial data is the ability to say that your model is predictive of the future. It is commonplace for any stock or financial advisor to say that past results are not indicative of future porformance. As a result, just because there was a relationship between variables that we can see, doesn't mean that will remain true. This is increasingly true if there is a new type of "shock" to the economy, like a global pandemic.
 
 ```{r echo=FALSE}
 data_monthly_dateless <- data_monthly %>%
@@ -724,18 +720,18 @@ train[, cols] = predict(pre_proc_val, train[, cols])
 test[, cols] = predict(pre_proc_val, test[, cols])
 ```
 
-
 ### Scaled Linear Model
-Our first new approach is to normalize the data in a hope of reducing some of the effects that certain datasets could have when their scales were so much larger than others. 
+
+Our first new approach is to normalize the data in a hope of reducing some of the effects that certain datasets could have when their scales were so much larger than others.
 
 ```{r echo=FALSE}
 linear_scaled <- lm(inflation_expectation ~ . , data = train)
 summary(linear_scaled)
 ```
 
-These are more exciting results! Using the scaled monthly data, we have some very significant results with non-trivial estimates. Things that we think effect our inflation expectation: how the cost of a basket of goods changes nationwide, the ten year treasury note, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. As would be expected, the bonds, the unemployment rate and the number of employees are all inversely correlated. We would assume prices won't be forced up when there are still people that want work, or when the bond yields are really high. 
+These are more exciting results! Using the scaled monthly data, we have some very significant results with non-trivial estimates. Things that we think effect our inflation expectation: how the cost of a basket of goods changes nationwide, the ten year treasury note, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. As would be expected, the bonds, the unemployment rate and the number of employees are all inversely correlated. We would assume prices won't be forced up when there are still people that want work, or when the bond yields are really high.
 
-As for the linear model itself, it is not terrific but also not as poor of a model as one might expect. Our $R^2$ values are above .65 and our RMSE is within reason. 
+As for the linear model itself, it is not terrific but also not as poor of a model as one might expect. Our $R^2$ values are above .65 and our RMSE is within reason.
 
 Running on train data:
 
@@ -760,6 +756,7 @@ predictions = predict(linear_scaled, newdata = train)
 eval_metrics(linear_scaled, train, predictions, target = 'inflation_expectation')
 
 ```
+
 Rerunning on test data:
 
 ```{r echo=FALSE}
@@ -768,10 +765,7 @@ predictions = predict(linear_scaled, newdata = test)
 eval_metrics(linear_scaled, test, predictions, target = 'inflation_expectation')
 ```
 
-
-
 $R^2$ remains the same and RMSE increases modestly on test data. Still not wonderful but better than I would naturally expect!
-
 
 ```{r echo=FALSE}
 # Regularization
@@ -786,7 +780,7 @@ test_dummies = predict(dummies, newdata = test[,cols_reg])
 print(dim(train_dummies)); print(dim(test_dummies))
 ```
 
-Initally, because of the extreme correlation in some, I would expect lasso to be the technique we eventually want to resort to but I figure we might as well try ridge as well. 
+Initally, because of the extreme correlation in some, I would expect lasso to be the technique we eventually want to resort to but I figure we might as well try ridge as well.
 
 ```{r echo=FALSE}
 # ridge
@@ -813,7 +807,7 @@ plot(ridge_reg, main = "Ridge Regression")
 
 ```
 
-Optimal lambda comes out at 0.001. I'm skeptical of this value immediately, and it may require more exploration to see if there are optimizations to improve it. 
+Optimal lambda comes out at 0.001. I'm skeptical of this value immediately, and it may require more exploration to see if there are optimizations to improve it.
 
 ```{r echo=FALSE}
 #lasso
@@ -859,15 +853,13 @@ mean(lasso_reg$lambda.1se)
 
 ```
 
-Taking a step back to look at what we are estimating. The expected values are between 0 and 6 effectively, for what will be the inflation in the immediate future. Really where our modeling might be letting us down is in the fact that the majority of the time, you can guess 2.5 to 3.5 % inflation and be right. 
-
+Taking a step back to look at what we are estimating. The expected values are between 0 and 6 effectively, for what will be the inflation in the immediate future. Really where our modeling might be letting us down is in the fact that the majority of the time, you can guess 2.5 to 3.5 % inflation and be right.
 
 ```{r echo=FALSE}
 #elastic net
 
 histogram(data_monthly_dateless$inflation_expectation, breaks = 20)
 ```
-
 
 ```{r echo=FALSE}
 cv_5 = trainControl(method = "cv", number = 5)
@@ -901,8 +893,8 @@ get_best_result = function(caret_fit) {
 
 get_best_result(inflation_elnet_best)
 ```
-We end up with very similar results: because alpha is at 1 so it is practicly doing the exact same algorithm as above. 
 
+We end up with very similar results: because alpha is at 1 so it is practicly doing the exact same algorithm as above.
 
 ## Principal Component Analysis
 
@@ -919,9 +911,6 @@ obs_x <- sapply(obs_x, diff)
 pr_out <- prcomp(obs_x, center = TRUE, scale = TRUE)
 ```
 
-
-
-
 ```{r echo=FALSE}
 plot(cumsum(pr_out$sdev^2)/ sum(pr_out$sdev^2))
 abline(h = 0.95)
@@ -936,17 +925,17 @@ Appears to be a noticable drop off at 5 actually.
 
 ## Economic Cycles
 
-At first, clustering didn't make much sense for such a wide variety of data. After all, what ways could we describe the entire economy of the United States? 
+At first, clustering didn't make much sense for such a wide variety of data. After all, what ways could we describe the entire economy of the United States?
 
-Well, when looking at the data graphed on FRED's website, it is clear that there is one major factor that the government is looking for: are we in a recession. In fact, it could be possible to pull out the different parts of the economic cycle from clustering. There should be characteristic markings in the data when the economy is in a recession versus when it is booming. The question is are those markings clear. 
+Well, when looking at the data graphed on FRED's website, it is clear that there is one major factor that the government is looking for: are we in a recession. In fact, it could be possible to pull out the different parts of the economic cycle from clustering. There should be characteristic markings in the data when the economy is in a recession versus when it is booming. The question is are those markings clear.
 
 ```{r echo=FALSE}
 km_out <- kmeans(data_monthly_dateless, centers = 3)
 
 #table(km_out$cluster)
 ```
-At first the distrubtion of groups actually looked decent. Using three phases, growth, recession and a sort of stagnation, we were hoping to capture the phases. However, running it on the original datasets led to three, completely chronological groups. Factors like debt, gdp and deficit likely were too much for the klustering to overcome. 
 
+At first the distrubtion of groups actually looked decent. Using three phases, growth, recession and a sort of stagnation, we were hoping to capture the phases. However, running it on the original datasets led to three, completely chronological groups. Factors like debt, gdp and deficit likely were too much for the klustering to overcome.
 
 ```{r echo=FALSE}
 data_monthly_scaled <- scale(data_monthly_dateless, scale = TRUE)
@@ -957,15 +946,14 @@ km_out <- kmeans(data_monthly_dateless, centers = 3)
 
 #km_out$cluster
 ```
-Even after scaling the data, chronological groups were all that klustering could pull out. 
 
-
-
+Even after scaling the data, chronological groups were all that klustering could pull out.
 
 ## Engineer features based on population
-Here we introduce population data from the census in order to hopefully look at per capita figures. This should hopefully find some new realizations. The US Census API actually has data for the entire world which is fascinating! 
 
-One reason why klustering might not be working so well is the effects that population growth is having on the country. There is undoubtably differences between the last few decades and klustering is pulling that out through the numbers. 
+Here we introduce population data from the census in order to hopefully look at per capita figures. This should hopefully find some new realizations. The US Census API actually has data for the entire world which is fascinating!
+
+One reason why klustering might not be working so well is the effects that population growth is having on the country. There is undoubtably differences between the last few decades and klustering is pulling that out through the numbers.
 
 ```{r echo=FALSE}
 lex <- get_idb(
@@ -1002,12 +990,11 @@ ggplot(data = population, mapping = aes(x = year, y = population)) +
   
 ```
 
-Out of caution, this will only be applied to the yearly data as this is the most granular level we have. In the future, you could linearly estimate the data assuming an equal distribution of birthdays throughout the year and that should be close. 
+Out of caution, this will only be applied to the yearly data as this is the most granular level we have. In the future, you could linearly estimate the data assuming an equal distribution of birthdays throughout the year and that should be close.
 
-The reason to create this type of feature is actually a much more helpful way of standardizing some of these values. For example, car sales will naturally climb with more people. But if it climbs per capita that would be a good indicator that inflationary levels and expecations. House prices could be affected in a similar way. 
+The reason to create this type of feature is actually a much more helpful way of standardizing some of these values. For example, car sales will naturally climb with more people. But if it climbs per capita that would be a good indicator that inflationary levels and expecations. House prices could be affected in a similar way.
 
-From our initial regression, we know that m2 money was important. However, this could be inappropriate because there should be more money with a lot more people so this is helpful to make sure that truly is significant. 
-
+From our initial regression, we know that m2 money was important. However, this could be inappropriate because there should be more money with a lot more people so this is helpful to make sure that truly is significant.
 
 ```{r echo=FALSE}
 population$year <- as.Date(ISOdate(population$year, 1, 1))
@@ -1047,7 +1034,7 @@ s_and_p_plot <- ggplot(data = df_yearly_cleaned, mapping = aes(x = year, y = s_a
 grid.arrange(percap_s_and_p_plot, s_and_p_plot)  
 ```
 
-Unfortunately, there doesn't appear to be much of a difference in the S and P to say the last. Let's see how regression ends up. 
+Unfortunately, there doesn't appear to be much of a difference in the S and P to say the last. Let's see how regression ends up.
 
 ```{r echo=FALSE}
 data_percap_dateless <- data_per_capita %>%
@@ -1064,28 +1051,16 @@ summary(linear_percap)
 km_out <- kmeans(scaled_percap, centers = 3)
 ```
 
-However, even scaled for population, clustering fails to recognize anything other than time, and the simplified per-capita regression provided no additional information compared to the full model. 
-
-
-
+However, even scaled for population, clustering fails to recognize anything other than time, and the simplified per-capita regression provided no additional information compared to the full model.
 
 ## Conclusion
 
 ### Data dredging and p hacking
 
-
 ### Value
 
 Saved time? Decreased uncertainty? What did we find?
 
-
-[] Veryify results
-- How robust is this?
-- Uncertainty? How does this affect the conclusions
+[] Veryify results - How robust is this? - Uncertainty? How does this affect the conclusions
 
 [] github readme
-
-
-
-
-
