@@ -1,4 +1,9 @@
-# Predicting Interest Rates
+---
+title: "Predicting Interest Rates"
+author: "Noah Love and Blinda Tian"
+date: "4/18/2021"
+output: html_document
+---
 
 [The Github Repo](https://github.com/noahlove/data-mining-final "The Github Repo")
 
