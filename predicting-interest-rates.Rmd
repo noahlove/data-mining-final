@@ -20,6 +20,7 @@ library(ggcorrplot)
 library(RColorBrewer) #PCA Viz
 library(idbr) #for population data (census)
 require(reshape2) #plotting all columns
+library(gridExtra)
 ```
 
 ```{r API, include=FALSE}
@@ -910,7 +911,9 @@ Even after scaling the data, chronological groups were all that klustering could
 
 
 ## Engineer features based on population
-Here we introduce population data from the census in order to hopefully look at per capita figures. This should hopefully find some new realizations. The US Census API actually has data for the entire world which is fascinating! So maybe we
+Here we introduce population data from the census in order to hopefully look at per capita figures. This should hopefully find some new realizations. The US Census API actually has data for the entire world which is fascinating! 
+
+One reason why klustering might not be working so well is the effects that population growth is having on the country. There is undoubtably differences between the last few decades and klustering is pulling that out through the numbers. 
 
 
 ```{r}
@@ -950,20 +953,61 @@ ggplot(data = population, mapping = aes(x = year, y = population)) +
 
 Out of caution, this will only be applied to the yearly data as this is the most granular level we have. In the future, you could linearly estimate the data assuming an equal distribution of birthdays throughout the year and that should be close. 
 
+The reason to create this type of feature is actually a much more helpful way of standardizing some of these values. For example, car sales will naturally climb with more people. But if it climbs per capita that would be a good indicator that inflationary levels and expecations. House prices could be affected in a similar way. 
+
+From our initial regression, we know that m2 money was important. However, this could be inappropriate because there should be more money with a lot more people so this is helpful to make sure that truly is significant. 
+
 
 ```{r}
 population$year <- as.Date(ISOdate(population$year, 1, 1))
+
+
+colnames(df_yearly_cleaned)
 
 data_per_capita <- merge(df_yearly_cleaned, population) %>% 
   mutate(car_sales_percap = total_vehicle_sales / population) %>% 
   mutate(house_price_percap = house_price_index_nationwide / population) %>% 
   mutate(s_and_p_percap = s_and_p / population) %>% 
-  mutate(m_two_percap = m_two / population)
+  mutate(m_two_percap = m_two / population) %>% 
+  mutate(consumer_price_index_percap = consumer_price_index_urban / population) %>% 
+  mutate(aaa_bond_percap = aaa_corporate_bond_yield / population) %>% 
+  mutate(all_empoyees_percap = all_employees_minus_farmers / population) %>% 
+  select(year, inflation_expectation, car_sales_percap,house_price_percap,s_and_p_percap,s_and_p_percap,m_two_percap,consumer_price_index_percap,aaa_bond_percap,all_empoyees_percap, personal_consumption_expenditures, eff_fed_funds_rate)
+
+
 ```
-The reason to create this type of feature is actually a much more helpful way of standardizing some of these values. For example, car sales will naturally climb with more people. But if it climbs per capita that would be a good indicator that inflationary levels and expecations. House prices could be affected in a similar way. 
 
-From our initial regression, we know that m2 money was important. However, this could be inappropriate because there should be more money with a lot more people so this is helpful to make sure that truly is significant. 
+```{r echo=FALSE}
+percap_s_and_p_plot <- ggplot(data = data_per_capita, mapping = aes(x = year, y = s_and_p_percap)) + 
+  geom_line()  
 
+
+
+s_and_p_plot <- ggplot(data = df_yearly_cleaned, mapping = aes(x = year, y = s_and_p)) +
+  geom_line()
+
+
+
+grid.arrange(percap_s_and_p_plot, s_and_p_plot)
+```
+
+Unfortunately, there doesn't appear to be much of a difference in the S and P to say the last. Let's see how regression ends up. 
+
+```{r}
+data_percap_dateless <- data_per_capita %>% 
+  select(-year)
+
+scaled_percap <- as_tibble(scale(data_percap_dateless))
+
+linear_percap <- lm(inflation_expectation ~ ., data = scaled_percap)
+
+summary(linear_percap)
+```
+```{r}
+km_out <- kmeans(scaled_percap, centers = 3)
+```
+
+However, even scaled for population, clustering fails to recognize anything other than time, and the simplified per-capita regression provided no additional information compared to the full model. 
 
 
 
