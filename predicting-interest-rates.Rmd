@@ -663,7 +663,6 @@ We can get a partial view of some of these strong relationships through a furthe
 
 ```{r echo=FALSE}
 
-
 ggcorrplot(correlation_df[10:21, 10:21], hc.order = TRUE, type = "lower")
 
 ```
@@ -674,42 +673,33 @@ Of course, now the immediate next step is likely to try Ridge, Lasso and Elastic
 ## Working with monthly data
 To get a more granular approach which is more appropriate, the other techniques will be tried on the monthly data instead of the yearly. 
 
-## Train and Test
+### Train and Test
 
-Note: It may be worth while to bootstrap or upsample here. 
+The data will be split into train and test datasets. The model will be trained on the train data and evaluated on the test data. This helps us gauge our robustness and see if we are at risk of overfitting. An inherent problem when dealing with financial data is the ability to say that your model is predictive of the future. It is commonplace for any stock or financial advisor to say that past results are not indicative of future porformance. As a result, just because there was a relationship between variables that we can see, doesn't mean that will remain true. This is increasingly true if there is a new type of "shock" to the economy, like a global pandemic. 
 
-The data will be split into train and test datasets. The model will be trained on the train data and evaluated on the test data.
-
-```{r}
-
+```{r echo=FALSE}
 data_monthly_dateless <- data_monthly %>% 
   select(-month)
 
 set.seed(100) 
 
-
 index = sample(1:nrow(data_monthly_dateless), 0.7*nrow(data_monthly_dateless)) 
 
 train = data_monthly_dateless[index,] # Create the training data 
 test = data_monthly_dateless[-index,] # Create the test data
-dim(train)
-dim(test)
-```
 
-
-```{r}
 cols <-  colnames(data_monthly_dateless) 
 
 pre_proc_val <- preProcess(train[,cols], method = c("center", "scale"))
 train[,cols] = predict(pre_proc_val, train[,cols])
 test[,cols] = predict(pre_proc_val, test[,cols])
-
-
 ```
 
 
-Scaled Linear Model
-```{r}
+### Scaled Linear Model
+Our first new approach is to normalize the data in a hope of reducing some of the effects that certain datasets could have when their scales were so much larger than others. 
+
+```{r echo=FALSE}
 linear_scaled <- lm(inflation_expectation ~ . , data = train)
 summary(linear_scaled)
 ```
@@ -718,7 +708,9 @@ These are more exciting results! Using the scaled monthly data, we have some ver
 
 As for the linear model itself, it is not terrific but also not as poor of a model as one might expect. Our $R^2$ values are above .65 and our RMSE is within reason. 
 
-```{r}
+Running on train data:
+
+```{r echo=FALSE}
 
 #Step 1 - create the evaluation metrics function
 
@@ -735,15 +727,22 @@ eval_metrics = function(model, df, predictions, target){
 predictions = predict(linear_scaled, newdata = train)
 eval_metrics(linear_scaled, train, predictions, target = 'inflation_expectation')
 
+
+```
+Rerunning on test data:
+
+```{r echo=FALSE}
 # Step 3 - predicting and evaluating the model on test data
 predictions = predict(linear_scaled, newdata = test)
 eval_metrics(linear_scaled, test, predictions, target = 'inflation_expectation')
 ```
 
+
+
 $R^2$ remains the same and RMSE increases modestly on test data. Still not wonderful but better than I would naturally expect!
 
 
-```{r}
+```{r echo=FALSE}
 # Regularization
 cols_reg = cols
 
@@ -758,8 +757,7 @@ print(dim(train_dummies)); print(dim(test_dummies))
 
 Initally, because of the extreme correlation in some, I would expect lasso to be the technique we eventually want to resort to but I figure we might as well try ridge as well. 
 
-```{r}
-
+```{r echo=FALSE}
 # ridge
 
 x = as.matrix(train_dummies)
@@ -782,7 +780,7 @@ plot(ridge_reg, main = "Ridge Regression")
 
 Optimal lambda comes out at 0.001. I'm skeptical of this value immediately, and it may require more exploration to see if there are optimizations to improve it. 
 
-```{r}
+```{r echo=FALSE}
 #lasso
 lambdas <- 10^seq(4, -3, by = -.1)
 
@@ -812,14 +810,14 @@ mean(lasso_reg$lambda.1se)
 Taking a step back to look at what we are estimating. The expected values are between 0 and 6 effectively, for what will be the inflation in the immediate future. Really where our modeling might be letting us down is in the fact that the majority of the time, you can guess 2.5 to 3.5 % inflation and be right. 
 
 
-```{r}
+```{r echo=FALSE}
 #elastic net
 
 histogram(data_monthly_dateless$inflation_expectation, breaks = 20)
 ```
 
 
-```{r}
+```{r echo=FALSE}
 cv_5 = trainControl(method = "cv", number = 5)
 
 inflation_elnet <- train(
@@ -831,7 +829,7 @@ inflation_elnet <- train(
 inflation_elnet
 ```
 
-```{r}
+```{r echo=FALSE}
 #similar results
 
 inflation_elnet_best <- train(
@@ -871,7 +869,7 @@ pr_out <- prcomp(obs_x, center=TRUE, scale=TRUE)
 
 
 
-```{r}
+```{r echo=FALSE}
 plot(cumsum(pr_out$sdev^2)/ sum(pr_out$sdev^2))
 abline(h = 0.95)
 
@@ -883,49 +881,32 @@ plot(pr_out$sdev, main="")
 
 Appears to be a noticable drop off at 5 actually.
 
+## Economic Cycles
 
+At first, clustering didn't make much sense for such a wide variety of data. After all, what ways could we describe the entire economy of the United States? 
+
+Well, when looking at the data graphed on FRED's website, it is clear that there is one major factor that the government is looking for: are we in a recession. In fact, it could be possible to pull out the different parts of the economic cycle from clustering. There should be characteristic markings in the data when the economy is in a recession versus when it is booming. The question is are those markings clear. 
+
+```{r echo=FALSE}
+km_out <- kmeans(data_monthly_dateless, centers = 3)
+
+#table(km_out$cluster)
+```
+At first the distrubtion of groups actually looked decent. Using three phases, growth, recession and a sort of stagnation, we were hoping to capture the phases. However, running it on the original datasets led to three, completely chronological groups. Factors like debt, gdp and deficit likely were too much for the klustering to overcome. 
 
 
 ```{r}
-# cor matrix
+data_monthly_scaled <- scale(data_monthly_dateless, scale = TRUE)
 
-# correlation <-round(cor(df_test,use = "complete.obs"),2)
-# correlation[upper.tri(correlation)] <- 0
-# correlation
-# 
-# # print it out
-# # library(xtable)
-# # print(xtable(upper), type="html")
-# 
-# 
-# 
-# 
-# # stages of the economic cycle (....)
-# 
-# 
-# # k means
-# # relatiom btw FEDFUNDS, Gold, CPI; cover any confonder
-# 
-# df_km <- cbind(DGS10_chg, FEDFUNDS_chg,CPIAUCS_chg,GOLDAMGBD228NLBM_chg)
-# 
-# df_km <- na.omit(df_km)
-# 
-# km_out <- kmeans(df_km, centers = 5)  #goodness of the classification k-means
-# 
-# output <- list()
-# for(i in 1:6){
-#         output[[i]] <- kmeans(coredata(df_km), i)
-# }
-# output  # maybe k =5
-# 
-# 
-# # number of observation
-# km_out <- kmeans(df_km, centers = 5)
-# km_out$size
-# km_out$centers
+km_out <- kmeans(data_monthly_dateless, centers = 3)
 
+#table(km_out$cluster)
 
+#km_out$cluster
 ```
+Even after scaling the data, chronological groups were all that klustering could pull out. 
+
+
 
 
 ## Engineer features based on population
