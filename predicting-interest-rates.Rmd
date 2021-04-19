@@ -611,7 +611,7 @@ data_quarterly <- df_monthly %>%
 
 ## Initial modeling tests
 
-For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metrix calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
+For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metric calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
 
 This is exciting because it acts as a proxy for how people feel about the economy, which we find to be a much more interesting question than what will bond prices be next year. In a sense, it allows us to analyze how humans feel about the economy: anxious or encouraged. 
 
