@@ -607,29 +607,27 @@ data_quarterly <- df_monthly %>%
   select(-federal_debt_total, - federal_debt_percent_of_gdp, -federal_surplus_or_deficit) %>% 
   na.omit()
 
-
 ```
 
 ## Initial modeling tests
 
 For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metrix calculated by Michigan State which says what do American's think the interest rate is going to do in the immediate future. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
 
-```{r}
+```{r echo=FALSE}
 linear_model_yearly <- lm(data = df_yearly_cleaned, inflation_expectation ~ .)
 
 summary(linear_model_yearly)
+
+
 ```
-
-```{r}
-plot(df_yearly_cleaned[1:10, 1:10])
-```
-
-
 
 Unsurprisingly, there is not a ton of significance throughout, and there is likely high colinearity between many of these. However, it is interesting to look at what was pulled through so far. Of the features that had a significance code, total vehicle sales and M2 money supply seem to be the most impactful. M2 money is a count of all money including cash and checking deposits (M1) as well as money saved in savings accounts, money market securities, mutual funds and other time deposits. In a sense, it is a good gauge of how much physical money Americans have that they are able to spend. 
 
+However, there are quite a few shortcomings to this initial approach. Noramlization might be helpful, and much of the data is highly correlated. For example, high correlation can very easily be identified by graphing:
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plot(df_yearly_cleaned[1:10, 1:10])
+
 df_yearly_minus_date <- df_yearly_cleaned %>% select(-year)
 
 correlation_df <- round(cor(df_yearly_minus_date),2)
@@ -646,25 +644,32 @@ gz <- ggplot(correlation_df_melt, mapping = aes(x = Var1, y = Var2, fill = value
 ggplotly(gz, tooltip = "text")
 
 ```
+
+
 From an even very brief glance, we can see quite a few of our features of very correlated. In a sense, this should be expected in a finance market with everything working together. For example, the Effective federal funds rate is designed to regulate many of the other features we have in our dataset, so it seems reasonable they are correlated. Also, some features are derivatives of others such as federal deficit and federal debt. 
 
+In fact, there are 7 features that have a correlation of over .99 with at lest one other feature. 
 
-
-```{r}
+```{r echo=FALSE}
 findCorrelation(
   cor(df_yearly_minus_date),
   cutoff = 0.99,
   verbose = FALSE,
-  names = FALSE
+  names = TRUE
 )
+```
 
-ggcorrplot(correlation_df, hc.order = TRUE, type = "lower")
+We can get a partial view of some of these strong relationships through a further graph exploration of a subset of the data. 
+
+```{r echo=FALSE}
+
+
+ggcorrplot(correlation_df[10:21, 10:21], hc.order = TRUE, type = "lower")
 
 ```
-Although the text is not readable (for now), the correlation is better shown when only highly correlated values are left in. 
+
 
 Of course, now the immediate next step is likely to try Ridge, Lasso and Elasticnet. These should "fix", at least to some extent the problem of multicolinearity. 
-
 
 ## Working with monthly data
 To get a more granular approach which is more appropriate, the other techniques will be tried on the monthly data instead of the yearly. 
