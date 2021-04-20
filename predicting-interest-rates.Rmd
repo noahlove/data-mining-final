@@ -3,8 +3,9 @@ title: "Predicting Inflation Expectation"
 author: "Noah Love and Blinda Tian"
 date: "4/18/2021"
 output:
-  pdf_document: default
-  html_document: default
+  html_document:
+    df_print: paged
+  word_document: default
 ---
 
 [The Github Repo](https://github.com/noahlove/data-mining-final "The Github Repo")
@@ -47,7 +48,9 @@ idb_api_key("ff03f4c2d4f1a380a4e05b83b2515e75f900bf00")
 
 Both Blinda and I had a fascination with economics data and were particularly interested in finding ways to apply the techniques we have learned in data mining to the field of economics. In many cases, "economics" as an entire field seems way too daunting to attack as a whole. However, in some sense, that seems like a perfect reason to pick it for a data mining project! We could download a massive amount of rather tangentially related data, and find patterns or facts that we find interesting. In the end, our goal was to hopefully build some sort of algorithm or model that backs up the intuition that we have created learning Economics while at Columbia. Of course much of economics comes down to really cool new techniques for finding casual inferences like difference-in-difference and regression discontinuities, but we think some really interesting conclusions should be available with other tools.
 
-As such our audience for this paper can be anyone who are interested in inflation forecast and care about thier future life cost. Topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMS.
+As such our audience for this paper can be anyone who are interested in inflation forecast and care about thier future life cost. Topics that will be covered in the coming pages should be completely accessible to undergraduates and anyone that has even a very basic understanding of economics terms. While some of the features in the data may not be clear on their own, if they have significant or interesting results they will be explained. For example a term like M1 money. This is just economists making up a fancy term for immediately available money: money that is in checking accounts pretty much and available through debit cards or ATMs.
+
+
 
 ## Datasets!
 
@@ -641,7 +644,7 @@ data_quarterly <- df_monthly %>%
 
 ## Initial modeling tests
 
-For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metric calculated by Michigan State which says what do American consumers expect the price of goods and services to change during the next 12 months. In a sense, this allows us to approximate what the effects of all the other features are on Americans. 
+For intuition, I decided to run regression on the yearly dataset, as it has a few additional features that we lose when picking quarterly or monthly, so I thought it couldn't hurt to try. As for what to predict, I thought the most interesting would actually be the inflation expectation. This is a metric calculated by Michigan State which says what do American consumers expect the price of goods and services to change during the next 12 months. In a sense, this allows us to approximate what the effects of all the other features are on Americans. Its value represents the median expected price change over the next 12 months as a survey of consumers.  
 
 This is exciting because it acts as a proxy for how people feel about the economy, which we find to be a much more interesting question than what will bond prices be next year. And since the start of 2021, more and more people pay attention to the potential rise in inflation after Fed's unprecedented stimulus package initiated. 
 In a sense, the inflation expectation allows us to analyze how humans feel about the economy: anxious or encouraged by looking at the economic indicators.
@@ -905,6 +908,7 @@ get_best_result(inflation_elnet_best)
 We end up with very similar results: because alpha is at 1 so it is practicly doing the exact same algorithm as above. There is few difference between working on normal OLS regression objective and lasso/ridge. 
 
 ## Principal Component Analysis
+For the financial data, PCA provides an intersting approach in order to group the data together into new components. This should create a few really meaningful components compared to our current variety of correlated features. 
 
 ```{r echo=FALSE}
 obs_x <- na.omit(data_monthly) %>%
@@ -917,8 +921,6 @@ obs_x$date <- NULL
 obs_x <- sapply(obs_x, diff)
 
 pr_out <- prcomp(obs_x, center = TRUE, scale = TRUE)
-
-
 ```
 
 ```{r echo=FALSE}
@@ -931,7 +933,9 @@ W <-  pr_out$x[,1:2]
 plot(pr_out$sdev, main="")
 ```
 
-Appears to be a noticable drop off at 5 actually.
+Appears to be a noticable drop off at 5 actually. While it is not immediately clear to us what each component represents in reality, an economics expert likely would be able to pick out these features. 
+
+
 
 ## Economic Cycles
 
@@ -939,20 +943,8 @@ At first, clustering didn't make much sense for such a wide variety of data. Aft
 
 Well, when looking at the data graphed on FRED's website, it is clear that there is one major factor that the government is looking for: are we in a recession. In fact, it could be possible to pull out the different parts of the economic cycle from clustering. There should be characteristic markings in the data when the economy is in a recession versus when it is booming. The question is are those markings clear.
 
-
-The relation still stays the same across different economic cycle. 
-
 ```{r echo=FALSE}
-
 km_out <- kmeans(data_monthly_dateless, centers = 3)
-
-
-#table(km_out$cluster)
-```
-
-
-```{r}
-
 ```
 
 At first the distrubtion of groups actually looked decent. Using three phases, growth, recession and a sort of stagnation, we were hoping to capture the phases. However, running it on the original datasets led to three, completely chronological groups. Factors like debt, gdp and deficit likely were too much for the klustering to overcome.
@@ -967,10 +959,11 @@ km_out <- kmeans(data_monthly_dateless, centers = 3)
 #km_out$cluster
 plot(data_monthly$month,km_out$cluster)
 
-
 ```
 
 Even after scaling the data, chronological groups were all that klustering could pull out.
+
+With future exploration, it would be wise to look at the derivatives of the features. Looking at the change in GDP for example would be a great way to possibly group the data. 
 
 ## Engineer features based on population
 
@@ -1074,12 +1067,14 @@ summary(linear_percap)
 km_out <- kmeans(scaled_percap, centers = 3)
 ```
 
-However, even scaled for population, clustering fails to recognize anything other than time, and the simplified per-capita regression provided no additional information compared to the full model.
+However, even scaled for population, clustering fails to recognize anything other than time, and the simplified per-capita regression provided no additional information compared to the full model. Some of this lack of fixing our problem may be in the nature of infaltion expectations. In a sense, just the number of people doesn't necessarily affect inflation. Rather, numbers like the number of people consuming goods, such as going into retirement of immigrating may be much more representative. This is supported by our initial regression showing unemployment rate and people's free money are strongly related to predicted inflation. 
 
 ### Data dredging
-We have gone through the following process to avoid the failure to acknowledge that the correlation was in fact the result of chance. We are confident that the comparison among different models is a valid metric to prevent data dredging. The analysis was conducted in k-fold cross-validations to assessing the model performance. Then, with testing error higher than the training error that probably indicates overfitting, we introduced variable regularization (Lasso & Ridge) to the model and intend to reduce the number of free parameters. However, the result turns out to be the optimal lambda close to zero, and thus Lasso & Ridge produce the close to classical least square coefficients. 
+We have gone through the following process to avoid the failure to acknowledge that the correlation was in fact the result of chance. We are confident that the comparison among different models is a valid metric to prevent data dredging. The analysis was conducted in k-fold cross-validations to assessing the model performance. Then, with testing error higher than the training error that probably indicates overfitting, we introduced variable regularization (Lasso & Ridge) to the model and intend to reduce the number of free parameters. However, the result turns out to be the optimal lambda close to zero, and thus Lasso & Ridge produce the close to classical least square coefficients. Nevertheless, there is serious risk of "P-hacking" or data dredging when doing explorations as we have outlined above. By trying a wide variety of normalizations and explorations of the data increases the risk of finding spurrious correlations or results that are only due to chance. As a result, it is important to remember these results are exploratory, and shouldn't be used for inference without more research. 
 
 While there are some limitations in our dataset. For example, the missing factors and unmeasured confounders may generate bias in predicting inflation expectation. The variables that we imported are constructed on some empirically motivating characteristic of the economy and those numbers are captured by experts or big data. But inflation expectation, even at an aggregate level, is measured by the survey to evaluate consumer sentiment. However, the consumer's learning process and the role of trust in the economic variables are not considered in the model. 
+
+
 
 
 ## Conclusion
