@@ -2,7 +2,9 @@
 title: "Predicting Inflation Expectation"
 author: "Noah Love and Blinda Tian"
 date: "4/18/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 [The Github Repo](https://github.com/noahlove/data-mining-final "The Github Repo")
@@ -915,6 +917,8 @@ obs_x$date <- NULL
 obs_x <- sapply(obs_x, diff)
 
 pr_out <- prcomp(obs_x, center = TRUE, scale = TRUE)
+
+
 ```
 
 ```{r echo=FALSE}
@@ -935,10 +939,20 @@ At first, clustering didn't make much sense for such a wide variety of data. Aft
 
 Well, when looking at the data graphed on FRED's website, it is clear that there is one major factor that the government is looking for: are we in a recession. In fact, it could be possible to pull out the different parts of the economic cycle from clustering. There should be characteristic markings in the data when the economy is in a recession versus when it is booming. The question is are those markings clear.
 
+
+The relation still stays the same across different economic cycle. 
+
 ```{r echo=FALSE}
+
 km_out <- kmeans(data_monthly_dateless, centers = 3)
 
+
 #table(km_out$cluster)
+```
+
+
+```{r}
+
 ```
 
 At first the distrubtion of groups actually looked decent. Using three phases, growth, recession and a sort of stagnation, we were hoping to capture the phases. However, running it on the original datasets led to three, completely chronological groups. Factors like debt, gdp and deficit likely were too much for the klustering to overcome.
@@ -1069,5 +1083,5 @@ While there are some limitations in our dataset. For example, the missing factor
 
 
 ## Conclusion
-In summary, this whole project started by mining economic variables from the FRED database. Then, through cleaning, identifying, and learning more about the data, we attempted to discover and analyze patterns that are related to inflation expectation. Later, we tried to use a different combination of predictors and models, including OLS, scaling, Lasso, Ridge, clustering, and adding population feature, then evaluate their feasibility respectively. Eventually, we believe that the OLS model on scaled monthly data generates with more accuracy and interpretability. Our regression model suggests that that inflation expectation has a stronger relationship in current inflation, ten-year treasury bond, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. Within those key variables, the treasury bonds, the unemployment rate, and the number of employees are negatively correlated. And this relation also aligns with economic theory and market intuition. How human think about the future inflation comes from their current feeling in price of good and overall longterm cost of financing and living. Both mortgage rates and ten year tresury yield implies the long-term cost of financing, with lower rates imply a lower cost of living, thus the higher purchasing power in the future. And with low levels of unemployment, more consumers have discretionary income to purchase goods and thus the prices of good rise.
+In summary, this whole project started by mining economic variables from the FRED database. Then, through cleaning, identifying, and learning more about the data, we attempted to discover and analyze patterns that are related to inflation expectation. Later, we tried to use a different combination of predictors and models, including OLS, scaling, Lasso, Ridge, clustering, and adding population feature, then evaluate their feasibility respectively. Eventually, we believe that the OLS model on scaled monthly data generates with more accuracy and interpretability. Our regression model suggests that that inflation expectation has a stronger relationship in current inflation, ten-year treasury bond, the unemployment rate, the 30 fixed mortgage rate, number of employees in the US. Within those key variables, the treasury bonds, the unemployment rate, and the number of employees are negatively correlated. And this relation also aligns with economic theory and market intuition. How human think about the future inflation comes from their current feeling in price of good and overall longterm cost of financing and living. Both mortgage rates, though not revealed in economic theory, has a similar meaning with ten year tresury yield which implies the long-term cost of financing. Lower rates imply a lower cost of living, thus the higher purchasing power in the future. And with low levels of unemployment, more consumers have discretionary income to purchase goods and thus the prices of good rise. 
 
