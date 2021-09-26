@@ -4,6 +4,10 @@
 
 Our project is mainly focused on turning raw economic data into an actionable insight of analyzing how humans feel about the economy simply by employing a known economic indicators. After evaluating multiple methods, the algorithm using OLS regression on scaled monthly data suggested that the consumer's inflation expectation is strongly correlated with current price of good and overall longterm cost of financing. 
 
+### Final Project Report
+
+https://github.com/noahlove/data-mining-final/blob/main/Final%20Project%20Report.pdf
+
 
 
 ## Datasets
